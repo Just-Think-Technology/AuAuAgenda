@@ -20,7 +20,48 @@ export async function findAdminCredentialsByEmail(email: string) {
 export async function findActiveClientIdentity(cpf: string) {
 	return db.client.findFirst({
 		where: { cpf, deleted_at: null },
-		select: { cpf: true, name: true, email: true },
+		select: { cpf: true, name: true, email: true, session_version: true },
+	});
+}
+
+export async function getClientSessionVersion(cpf: string): Promise<number | null> {
+	const row = await db.client.findFirst({
+		where: { cpf, deleted_at: null },
+		select: { session_version: true },
+	});
+	return row?.session_version ?? null;
+}
+
+export async function bumpClientSessionVersion(cpf: string): Promise<number | null> {
+	const row = await db.client.updateMany({
+		where: { cpf, deleted_at: null },
+		data: { session_version: { increment: 1 }, updated_at: new Date() },
+	});
+	if (row.count !== 1) return null;
+	return getClientSessionVersion(cpf);
+}
+
+export async function getAdminSessionVersion(adminId: string): Promise<number | null> {
+	const row = await db.admin.findFirst({
+		where: { admin_id: adminId, deleted_at: null },
+		select: { session_version: true },
+	});
+	return row?.session_version ?? null;
+}
+
+export async function bumpAdminSessionVersion(adminId: string): Promise<number | null> {
+	const row = await db.admin.updateMany({
+		where: { admin_id: adminId, deleted_at: null },
+		data: { session_version: { increment: 1 }, updated_at: new Date() },
+	});
+	if (row.count !== 1) return null;
+	return getAdminSessionVersion(adminId);
+}
+
+export async function updateAdminPasswordHash(adminId: string, passwordHash: string): Promise<void> {
+	await db.admin.updateMany({
+		where: { admin_id: adminId, deleted_at: null },
+		data: { password: passwordHash, updated_at: new Date() },
 	});
 }
 
@@ -46,7 +87,7 @@ export async function findClientByEmail(email: string) {
 export async function findActiveAdminIdentity(adminId: string) {
 	return db.admin.findFirst({
 		where: { admin_id: adminId, deleted_at: null },
-		select: { admin_id: true, name: true, email: true },
+		select: { admin_id: true, name: true, email: true, session_version: true },
 	});
 }
 

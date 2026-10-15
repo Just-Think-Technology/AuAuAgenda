@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { isAppointmentStatus } from "@/lib/domain/appointment-status";
+import { mocksDomainBlocked } from "@/lib/server/mocks-guard";
 import { toActionError, type ActionResult } from "@/lib/server/action-result";
 import { requireAdmin } from "@/lib/server/current-user";
 import { changeBookingStatus } from "@/lib/use-cases/management/booking-status";
@@ -12,6 +13,8 @@ export async function changeAppointmentStatusAction(input: {
 	from: string;
 	to: string;
 }): Promise<ActionResult> {
+	const blocked = mocksDomainBlocked();
+	if (blocked) return blocked;
 	await requireAdmin();
 	const { appointmentId, from, to } = input;
 	if (!Number.isSafeInteger(appointmentId) || appointmentId < 1) {

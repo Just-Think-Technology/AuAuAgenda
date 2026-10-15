@@ -1,8 +1,14 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useTransition } from "react";
 
+import { toast } from "sonner";
+
+import { mockSyncClientSessionAction } from "@/app/actions/auth";
 import { updateClientProfileAction } from "@/app/actions/profile";
+import { isMocksPublic } from "@/lib/config/mocks-public";
+import { normalizePhone } from "@/lib/domain/phone";
+import { useMockDomainActions } from "@/lib/mock/client-actions";
 import { PageHeader } from "@/components/layouts/page-header";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
@@ -26,13 +32,58 @@ export type ProfileData = {
 	phone: string | null;
 };
 
-export function ProfileSettingsForm({ profile }: { profile: ProfileData }) {
+export function ProfileSettingsForm({
+	profile,
+	clientCpf,
+}: {
+	profile: ProfileData;
+	clientCpf?: string;
+}) {
+	const mocks = isMocksPublic() && Boolean(clientCpf);
+	const mockActions = useMockDomainActions();
 	const [state, formAction, isPending] = useActionState(updateClientProfileAction, undefined);
+	const [mockPending, startMock] = useTransition();
 	const [cpf, setCpf] = useState(profile.cpf ? formatCpf(profile.cpf) : "");
 	useActionFeedback(state);
 
+	function submitMock(event: React.FormEvent<HTMLFormElement>) {
+		event.preventDefault();
+		if (!clientCpf) return;
+		const formData = new FormData(event.currentTarget);
+		startMock(async () => {
+			const name = String(formData.get("name") ?? "").trim();
+			const phone = normalizePhone(String(formData.get("phone") ?? ""));
+			const emailRaw = String(formData.get("email") ?? "").trim();
+			const cpfRaw = String(formData.get("cpf") ?? "").replace(/\D/g, "");
+			const result = mockActions.updateProfile(clientCpf, {
+				name,
+				phone: phone ?? "",
+				email: emailRaw || null,
+				cpfDocument: cpfRaw || null,
+			});
+			if (!result?.ok) {
+				toast.error(result?.error ?? "Erro ao salvar.");
+				return;
+			}
+			const sync = await mockSyncClientSessionAction({
+				cpf: clientCpf,
+				name,
+				email: emailRaw || null,
+				sessionVersion: result.sessionVersion ?? 0,
+			});
+			if (sync.error) toast.error(sync.error);
+			else toast.success(result.message);
+		});
+	}
+
+	const pending = mocks ? mockPending : isPending;
+
 	return (
-		<form action={formAction} className="space-y-10">
+		<form
+			action={mocks ? undefined : formAction}
+			onSubmit={mocks ? submitMock : undefined}
+			className="space-y-10"
+		>
 			<PageHeader
 				title="Configurações"
 				description="Seus dados de contato. O telefone continua sendo a chave para entrar."
@@ -79,8 +130,8 @@ export function ProfileSettingsForm({ profile }: { profile: ProfileData }) {
 			</div>
 
 			<div className="flex justify-end">
-				<Button type="submit" disabled={isPending}>
-					{isPending ? "Salvando…" : "Salvar alterações"}
+				<Button type="submit" disabled={pending}>
+					{pending ? "Salvando…" : "Salvar alterações"}
 				</Button>
 			</div>
 		</form>

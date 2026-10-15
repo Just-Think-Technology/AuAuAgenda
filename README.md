@@ -28,6 +28,22 @@ pnpm dev                  # http://localhost:3000
 | `pnpm db:migrate:deploy` | Aplica migrações pendentes |
 | `pnpm db:studio` | Prisma Studio |
 
+### Modo demonstração (`MOCKS=true`)
+
+Para apresentar o produto sem PostgreSQL, defina `MOCKS=true` no `.env` (e `JWT_SECRET` com um valor aleatório). Os dados ficam **somente no navegador** (`localStorage`); cada visitante vê e altera a própria cópia.
+
+```bash
+MOCKS=true JWT_SECRET="$(openssl rand -base64 48)" pnpm dev
+```
+
+- Cliente: login por telefone em `/` (mesmo fluxo visual).
+- Gestão: `/gestao` — botão **Entrar na gestão** (sem e-mail/senha na tela).
+- Cadastro por e-mail, esqueci senha e reset não estão disponíveis na demo.
+
+Credenciais fixas de demo existem só no código (`lib/mock/constants.ts`) para referência de quem mantém o projeto; quem testa o produto não precisa delas.
+
+Em **produção**, mantenha `MOCKS=false` (padrão) e configure `DATABASE_URL` normalmente.
+
 ## Organização
 
 ```
@@ -62,6 +78,8 @@ As migrações em `prisma/migrations` são aditivas:
 - `0_init` representa o schema original da clínica (linha de base).
 - `1_petshop_booking` adiciona serviços, porte e observações do pet, telefone do cliente, configurações do pet shop, expediente e os novos campos de agendamento. Também cria a extensão `btree_gist`, a restrição de não sobreposição e os dados iniciais do expediente.
 - `2_phone_login` torna e-mail, senha e data de nascimento opcionais e impede que duas contas ativas compartilhem o mesmo telefone. A migração falha se já existirem telefones duplicados entre contas ativas.
+- `3_auth_hardening` adiciona rate limit compartilhado no Postgres e `session_version` para revogar JWTs antigos.
+- `4_drop_phone_otp` remove a tabela de desafio SMS (login do cliente volta a ser só telefone).
 
 **Banco já existente (produção):** o schema original já está aplicado, então marque a linha de base antes de aplicar o resto. Faça um backup antes.
 
@@ -76,7 +94,7 @@ Agendamentos antigos da clínica permanecem no banco e não aparecem na nova age
 
 ### Acesso
 
-O cliente entra em `/` com o telefone. Se o número é novo, o servidor cria a conta e abre a sessão; se já existe, entra na mesma conta. Pets e agendamentos continuam ligados a essa conta. A sessão do cliente fica no cookie `pet-connect:token`.
+O cliente entra em `/` com o telefone. Se o número é novo, o servidor cria a conta e abre a sessão; se já existe, entra na mesma conta. Pets e agendamentos continuam ligados a essa conta. A sessão do cliente fica no cookie `pet-connect:token` e pode ser revogada ao sair ou ao trocar o telefone.
 
 A gestão abre em `/gestao`. O cookie é outro, `pet-connect:admin`, e dura 24 horas. Se ele não existir ou já tiver vencido, a mesma rota pede e-mail e senha. Sair da gestão não encerra a sessão do cliente, e o contrário também vale.
 
@@ -85,7 +103,7 @@ A gestão abre em `/gestao`. O cookie é outro, `pet-connect:admin`, e dura 24 h
 Não há cadastro público de administradores. Gere o hash da senha e insira o registro:
 
 ```bash
-node -e "require('bcrypt').hash(process.argv[1], 10).then(console.log)" 'senha-forte-aqui'
+node -e "require('bcrypt').hash(process.argv[1], 12).then(console.log)" 'senha-forte-aqui'
 ```
 
 ```sql
@@ -103,5 +121,5 @@ Veja `.env.example`. `API_URL` e `APP_API_KEY` do antigo backend Express não s�
 
 - O backend Express e o frontend separado foram removidos. O histórico original está no repositório `petconnect-uscs/website`.
 - O envio de foto do pet foi descontinuado. Fotos antigas com URL HTTPS continuam aparecendo; nos demais casos é usada a imagem da raça.
-- O limite de tentativas de login e recuperação de senha fica em memória, por instância. Em ambiente com várias instâncias, use um armazenamento compartilhado.
+- O limite de tentativas de login, OTP e recuperação de senha usa a tabela `auth_rate_limit` no Postgres. Defina `TRUST_PLATFORM_IP=1` em produção quando o proxy definir `x-real-ip` com o endereço real do cliente.
 - A remoção de clientes e serviços é lógica (`deleted_at`), preservando o histórico.

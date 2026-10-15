@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { isMocksEnabled } from "@/lib/config/mocks";
 import { DomainError } from "@/lib/domain/errors";
+import { mocksDomainBlocked, mocksFormBlocked } from "@/lib/server/mocks-guard";
 import { toActionError, type ActionResult, type FormState } from "@/lib/server/action-result";
 import { requireClient } from "@/lib/server/current-user";
 import {
@@ -35,6 +37,7 @@ export async function createAppointmentAction(
 	_prev: FormState,
 	formData: FormData,
 ): Promise<FormState> {
+	if (isMocksEnabled()) return mocksFormBlocked() ?? { ok: false, error: "" };
 	const user = await requireClient();
 	try {
 		await createBooking({
@@ -55,6 +58,7 @@ export async function rescheduleAppointmentAction(
 	_prev: FormState,
 	formData: FormData,
 ): Promise<FormState> {
+	if (isMocksEnabled()) return mocksFormBlocked() ?? { ok: false, error: "" };
 	const user = await requireClient();
 	try {
 		await rescheduleBooking(
@@ -71,6 +75,8 @@ export async function rescheduleAppointmentAction(
 }
 
 export async function cancelAppointmentAction(appointmentId: number): Promise<ActionResult> {
+	const blocked = mocksDomainBlocked();
+	if (blocked) return blocked;
 	const user = await requireClient();
 	try {
 		await cancelBooking(user.cpf, readAppointmentId(appointmentId));

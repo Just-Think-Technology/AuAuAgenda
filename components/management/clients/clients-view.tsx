@@ -4,6 +4,8 @@ import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { deleteClientAction } from "@/app/actions/admin-clients";
+import { isMocksPublic } from "@/lib/config/mocks-public";
+import { useMockDomainActions } from "@/lib/mock/client-actions";
 import { PetCard } from "@/components/pets/pet-card";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +24,8 @@ import { buildColumns, type ManagedClient } from "./columns";
 import { DataTable } from "./data-table";
 
 export function ClientsView({ clients }: { clients: ManagedClient[] }) {
+	const mocks = isMocksPublic();
+	const mockActions = useMockDomainActions();
 	const [activeCpf, setActiveCpf] = useState<string | null>(null);
 	const [cpfToDelete, setCpfToDelete] = useState<string | null>(null);
 	const [isDeleting, startDelete] = useTransition();
@@ -32,7 +36,9 @@ export function ClientsView({ clients }: { clients: ManagedClient[] }) {
 	function confirmDelete() {
 		if (!cpfToDelete) return;
 		startDelete(async () => {
-			const result = await deleteClientAction(cpfToDelete);
+			const result = mocks
+				? mockActions.removeClient(cpfToDelete)
+				: await deleteClientAction(cpfToDelete);
 			if (result.ok) {
 				toast.success(result.message);
 				if (activeCpf === cpfToDelete) setActiveCpf(null);

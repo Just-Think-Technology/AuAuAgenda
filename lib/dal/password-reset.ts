@@ -51,7 +51,11 @@ export async function consumeResetToken(tokenHash: string, passwordHash: string)
 
 		await tx.client.update({
 			where: { cpf: token.client_cpf },
-			data: { password: passwordHash, updated_at: now },
+			data: {
+				password: passwordHash,
+				session_version: { increment: 1 },
+				updated_at: now,
+			},
 			select: { cpf: true },
 		});
 		return true;

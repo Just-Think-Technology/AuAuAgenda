@@ -1,8 +1,14 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useTransition } from "react";
+
+import { toast } from "sonner";
 
 import { savePetAction } from "@/app/actions/pets";
+import { isMocksPublic } from "@/lib/config/mocks-public";
+import { DomainError } from "@/lib/domain/errors";
+import { parseDateKey } from "@/lib/domain/time-zone";
+import { useMockDomainActions } from "@/lib/mock/client-actions";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -40,17 +46,77 @@ type Props = {
 	pet: EditablePet | null;
 	species: Option[];
 	breedsBySpecies: Record<string, Option[]>;
+	clientCpf?: string;
 };
 
 /** Mounted with a `key` per pet so field defaults reset when switching pets. */
-export function PetFormDialog({ open, onOpenChange, pet, species, breedsBySpecies }: Props) {
+function readPetForm(formData: FormData) {
+	const name = String(formData.get("name") ?? "").trim();
+	if (!name) throw new DomainError("Informe o nome do pet.");
+	const speciesId = String(formData.get("species_id") ?? "");
+	if (!speciesId) throw new DomainError("Selecione a espécie.");
+	const breedRaw = String(formData.get("breed_id") ?? "");
+	const breedId = breedRaw || null;
+	const size = String(formData.get("size") ?? "");
+	if (!PET_SIZES.includes(size as (typeof PET_SIZES)[number])) {
+		throw new DomainError("Selecione o porte.");
+	}
+	const sexRaw = String(formData.get("sex") ?? "");
+	const sex: "male" | "female" | null = sexRaw === "male" || sexRaw === "female" ? sexRaw : null;
+	const birthRaw = String(formData.get("birth_date") ?? "");
+	let birthDate: Date | null = null;
+	if (birthRaw) {
+		const parts = parseDateKey(birthRaw);
+		const date = parts && new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
+		if (!date || date.getTime() > Date.now()) throw new DomainError("Data de nascimento inválida.");
+		birthDate = date;
+	}
+	const notes = String(formData.get("notes") ?? "").trim() || null;
+	const petId = String(formData.get("pet_id") ?? "") || null;
+	return {
+		petId,
+		input: {
+			name,
+			speciesId,
+			breedId,
+			size: size as (typeof PET_SIZES)[number],
+			sex,
+			birthDate,
+			notes,
+		},
+	};
+}
+
+export function PetFormDialog({ open, onOpenChange, pet, species, breedsBySpecies, clientCpf }: Props) {
+	const mocks = isMocksPublic() && Boolean(clientCpf);
+	const mockActions = useMockDomainActions();
 	const [state, formAction, isPending] = useActionState(savePetAction, undefined);
+	const [mockPending, startMock] = useTransition();
 	const [speciesId, setSpeciesId] = useState(pet?.species_id ?? "");
 	const breeds = breedsBySpecies[speciesId] ?? [];
 	useActionFeedback(state, () => onOpenChange(false));
 
+	function submitMock(event: React.FormEvent<HTMLFormElement>) {
+		event.preventDefault();
+		if (!clientCpf) return;
+		const formData = new FormData(event.currentTarget);
+		startMock(() => {
+			try {
+				const { petId, input } = readPetForm(formData);
+				const result = mockActions.savePet(clientCpf, petId, input);
+				if (!result?.ok) throw new DomainError(result?.error ?? "Erro ao salvar.");
+				toast.success(result.message);
+				onOpenChange(false);
+			} catch (error) {
+				toast.error(error instanceof Error ? error.message : "Erro ao salvar pet.");
+			}
+		});
+	}
+
+	const pending = mocks ? mockPending : isPending;
+
 	return (
-		<Dialog open={open} onOpenChange={(next) => !isPending && onOpenChange(next)}>
+		<Dialog open={open} onOpenChange={(next) => !pending && onOpenChange(next)}>
 			<DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
 				<DialogHeader>
 					<DialogTitle>{pet ? `Editar ${pet.name}` : "Cadastrar pet"}</DialogTitle>
@@ -59,7 +125,11 @@ export function PetFormDialog({ open, onOpenChange, pet, species, breedsBySpecie
 					</DialogDescription>
 				</DialogHeader>
 
-				<form action={formAction} className="grid gap-4 sm:grid-cols-2">
+				<form
+					action={mocks ? undefined : formAction}
+					onSubmit={mocks ? submitMock : undefined}
+					className="grid gap-4 sm:grid-cols-2"
+				>
 					{pet && <input type="hidden" name="pet_id" value={pet.pet_id} />}
 
 					<Field htmlFor="pet-name" label="Nome" className="sm:col-span-2">
@@ -153,11 +223,11 @@ export function PetFormDialog({ open, onOpenChange, pet, species, breedsBySpecie
 					</Field>
 
 					<DialogFooter className="sm:col-span-2">
-						<Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
+						<Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>
 							Cancelar
 						</Button>
-						<Button type="submit" disabled={isPending}>
-							{isPending ? "Salvando…" : "Salvar"}
+						<Button type="submit" disabled={pending}>
+							{pending ? "Salvando…" : "Salvar"}
 						</Button>
 					</DialogFooter>
 				</form>

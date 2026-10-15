@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 
+import { isMocksEnabled } from "@/lib/config/mocks";
 import { DomainError } from "@/lib/domain/errors";
+import { mocksDomainBlocked, mocksFormBlocked } from "@/lib/server/mocks-guard";
 import { PET_SIZES } from "@/lib/domain/pet-size";
 import { parseDateKey } from "@/lib/domain/time-zone";
 import { toActionError, type ActionResult, type FormState } from "@/lib/server/action-result";
@@ -33,6 +35,7 @@ function optionalSex(form: FormData): "male" | "female" | null {
 }
 
 export async function savePetAction(_prev: FormState, formData: FormData): Promise<FormState> {
+	if (isMocksEnabled()) return mocksFormBlocked() ?? { ok: false, error: "" };
 	const user = await requireClient();
 	try {
 		await savePet(user.cpf, optionalUuid(formData, "pet_id"), {
@@ -52,6 +55,8 @@ export async function savePetAction(_prev: FormState, formData: FormData): Promi
 }
 
 export async function deletePetAction(petId: string): Promise<ActionResult> {
+	const blocked = mocksDomainBlocked();
+	if (blocked) return blocked;
 	const user = await requireClient();
 	if (!isUuid(petId)) return { ok: false, error: "Pet inválido." };
 	try {

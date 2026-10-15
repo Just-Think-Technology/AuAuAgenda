@@ -1,9 +1,16 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+import { toast } from "sonner";
 
 import { saveServiceAction } from "@/app/actions/services";
+import { isMocksPublic } from "@/lib/config/mocks-public";
+import { DomainError } from "@/lib/domain/errors";
+import { useMockDomainActions } from "@/lib/mock/client-actions";
+import { parseServiceForm } from "@/lib/mock/parse-forms";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -68,11 +75,36 @@ export function ServiceForm({
 	service: ServiceFormValues | null;
 	species: { id: string; name: string }[];
 }) {
+	const mocks = isMocksPublic();
+	const mockActions = useMockDomainActions();
+	const router = useRouter();
 	const [state, formAction, isPending] = useActionState(saveServiceAction, undefined);
+	const [mockPending, startMock] = useTransition();
 	useActionFeedback(state);
 
+	function submitMock(event: React.FormEvent<HTMLFormElement>) {
+		event.preventDefault();
+		const formData = new FormData(event.currentTarget);
+		startMock(() => {
+			try {
+				const { serviceId, input } = parseServiceForm(formData);
+				const result = mockActions.saveService(serviceId, input);
+				if (!result.ok) throw new DomainError(result.error);
+				router.push("/gestao/servicos?salvo=1");
+			} catch (error) {
+				toast.error(error instanceof Error ? error.message : "Erro ao salvar serviço.");
+			}
+		});
+	}
+
+	const pending = mocks ? mockPending : isPending;
+
 	return (
-		<form action={formAction} className="max-w-3xl space-y-6">
+		<form
+			action={mocks ? undefined : formAction}
+			onSubmit={mocks ? submitMock : undefined}
+			className="max-w-3xl space-y-6"
+		>
 			{service && <input type="hidden" name="service_id" value={service.id} />}
 
 			<div className="grid gap-4 sm:grid-cols-2">
@@ -126,8 +158,8 @@ export function ServiceForm({
 			</label>
 
 			<div className="flex gap-2">
-				<Button type="submit" disabled={isPending}>
-					{isPending ? "Salvando…" : "Salvar serviço"}
+				<Button type="submit" disabled={pending}>
+					{pending ? "Salvando…" : "Salvar serviço"}
 				</Button>
 				<Button asChild variant="outline">
 					<Link href="/gestao/servicos">Cancelar</Link>

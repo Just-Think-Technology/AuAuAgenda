@@ -1,19 +1,59 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useState, useTransition } from "react";
 
 import { Link } from "next-view-transitions";
 
 import { toast } from "sonner";
 
-import { loginAction } from "@/app/actions/auth";
+import { loginAction, mockAdminLoginAction } from "@/app/actions/auth";
 import { AuthLayout } from "@/components/layouts/auth-layout";
+import { isMocksPublic } from "@/lib/config/mocks-public";
+import { ensureSeed } from "@/lib/mock/storage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 
-export function AdminLogin() {
+function MockAdminLogin() {
+	const [pending, startLogin] = useTransition();
+
+	function enterDemo() {
+		startLogin(async () => {
+			const store = ensureSeed();
+			const response = await mockAdminLoginAction({
+				adminId: store.admin.adminId,
+				name: store.admin.name,
+				email: store.admin.email,
+				sessionVersion: store.admin.sessionVersion,
+			});
+			if (response?.error) toast.error(response.error);
+		});
+	}
+
+	return (
+		<AuthLayout
+			title="Acesso da equipe"
+			description="Veja a agenda do dia, serviços e clientes nesta demonstração."
+		>
+			<div className="flex flex-col gap-6">
+				<Button type="button" size="lg" disabled={pending} onClick={enterDemo}>
+					{pending ? "Entrando..." : "Entrar na gestão"}
+				</Button>
+				<div className="flex items-center justify-center">
+					<Link
+						href="/"
+						className="text-sm text-foreground/60 transition-colors hover:text-foreground"
+					>
+						Voltar ao acesso do cliente
+					</Link>
+				</div>
+			</div>
+		</AuthLayout>
+	);
+}
+
+function ProductionAdminLogin() {
 	const [state, formAction, isPending] = useActionState(loginAction, undefined);
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
@@ -66,4 +106,9 @@ export function AdminLogin() {
 			</form>
 		</AuthLayout>
 	);
+}
+
+export function AdminLogin() {
+	if (isMocksPublic()) return <MockAdminLogin />;
+	return <ProductionAdminLogin />;
 }

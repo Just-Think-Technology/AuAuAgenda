@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { cancelAppointmentAction } from "@/app/actions/appointments";
+import { isMocksPublic } from "@/lib/config/mocks-public";
+import { useMockDomainActions } from "@/lib/mock/client-actions";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -18,16 +20,23 @@ import {
 export function CancelAppointmentButton({
 	appointmentId,
 	summary,
+	clientCpf,
 }: {
 	appointmentId: number;
 	summary: string;
+	clientCpf?: string;
 }) {
+	const mocks = isMocksPublic() && Boolean(clientCpf);
+	const mockActions = useMockDomainActions();
 	const [open, setOpen] = useState(false);
 	const [isPending, startTransition] = useTransition();
 
 	function confirm() {
 		startTransition(async () => {
-			const result = await cancelAppointmentAction(appointmentId);
+			const result =
+				mocks && clientCpf
+					? mockActions.cancelAppointment(clientCpf, appointmentId)
+					: await cancelAppointmentAction(appointmentId);
 			if (result.ok) {
 				toast.success(result.message);
 				setOpen(false);

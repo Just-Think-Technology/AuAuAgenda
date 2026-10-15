@@ -2,33 +2,16 @@ import "server-only";
 
 import { headers } from "next/headers";
 
-/**
- * Fixed-window limiter kept in process memory. On multi-instance or serverless
- * hosting each instance counts separately, so this is a best-effort brake on
- * brute force; a shared store is needed for a hard global limit.
- */
-const buckets = new Map<string, { count: number; resetAt: number }>();
+import { consumeRateLimitBucket } from "@/lib/dal/rate-limit";
 
 export async function clientIp(): Promise<string> {
 	const headerStore = await headers();
-	return (
-		headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-		headerStore.get("x-real-ip") ||
-		"unknown"
-	);
+	const realIp = headerStore.get("x-real-ip")?.trim();
+	if (realIp && process.env.TRUST_PLATFORM_IP === "1") return realIp;
+	return "unknown";
 }
 
 /** Returns `true` while the key is under `max` hits in the current window. */
-export function consumeRateLimit(key: string, max: number, windowMs: number): boolean {
-	const now = Date.now();
-	const bucket = buckets.get(key);
-	if (!bucket || bucket.resetAt <= now) {
-		buckets.set(key, { count: 1, resetAt: now + windowMs });
-		if (buckets.size > 10_000) {
-			for (const [k, b] of buckets) if (b.resetAt <= now) buckets.delete(k);
-		}
-		return true;
-	}
-	bucket.count += 1;
-	return bucket.count <= max;
+export async function consumeRateLimit(key: string, max: number, windowMs: number): Promise<boolean> {
+	return consumeRateLimitBucket(key, max, windowMs);
 }

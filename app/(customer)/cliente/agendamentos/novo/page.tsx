@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { MockCustomerNewBooking } from "@/components/mock/pages/customer-new-booking";
 import { AvailableSlots } from "@/components/booking/available-slots";
+import { isMocksEnabled } from "@/lib/config/mocks";
 import { DatePicker } from "@/components/booking/date-picker";
 import { ChoiceGrid, ChoiceLink, StepSection } from "@/components/booking/step-section";
 import { EmptyState, PageHeader } from "@/components/layouts/page-header";
@@ -30,6 +32,7 @@ function href(params: Record<string, string | undefined>): string {
 
 export default async function NewAppointmentPage({ searchParams }: Props) {
 	const user = await requireClient();
+	if (isMocksEnabled()) return <MockCustomerNewBooking user={user} />;
 	const params = await searchParams;
 	const now = new Date();
 	const [pets, services, settings] = await Promise.all([

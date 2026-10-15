@@ -1,10 +1,9 @@
 import "server-only";
 
 import { DomainError } from "@/lib/domain/errors";
+import type { ActionResult, FormState } from "@/lib/types";
 
-export type ActionResult = { ok: true; message?: string } | { ok: false; error: string };
-
-export type FormState = ActionResult | undefined;
+export type { ActionResult, FormState };
 
 export const GENERIC_ERROR = "Não foi possível concluir a operação. Tente novamente em instantes.";
 

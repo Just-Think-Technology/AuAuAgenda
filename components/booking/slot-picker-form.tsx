@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -11,6 +11,10 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
+import { isMocksPublic } from "@/lib/config/mocks-public";
+import { DomainError } from "@/lib/domain/errors";
+import { toast } from "sonner";
+import { useMockDomainActions } from "@/lib/mock/client-actions";
 import { cn } from "@/lib/utils";
 
 export type SlotOption = { value: string; label: string; freeStations: number };
@@ -20,6 +24,8 @@ type Props = {
 	slots: SlotOption[];
 	hiddenFields: Record<string, string>;
 	defaultNotes?: string | null;
+	clientCpf?: string;
+	excludeId?: number;
 };
 
 const ACTIONS = {
@@ -27,18 +33,73 @@ const ACTIONS = {
 	reschedule: rescheduleAppointmentAction,
 };
 
-export function SlotPickerForm({ mode, slots, hiddenFields, defaultNotes }: Props) {
+function readStartsAt(value: string): Date {
+	const date = value ? new Date(value) : null;
+	if (!date || Number.isNaN(date.getTime())) throw new DomainError("Escolha um horário.");
+	return date;
+}
+
+export function SlotPickerForm({ mode, slots, hiddenFields, defaultNotes, clientCpf }: Props) {
+	const mocks = isMocksPublic() && Boolean(clientCpf);
 	const [state, formAction, isPending] = useActionState(ACTIONS[mode], undefined);
+	const mockActions = useMockDomainActions();
+	const [mockPending, startMock] = useTransition();
 	const [selected, setSelected] = useState("");
+	const [notes, setNotes] = useState(defaultNotes ?? "");
 	const router = useRouter();
-	// A rejected slot usually means the list is stale; reload it from the server.
+
 	useActionFeedback(state, undefined, () => {
 		setSelected("");
 		router.refresh();
 	});
 
+	function submitMock(event: React.FormEvent<HTMLFormElement>) {
+		event.preventDefault();
+		if (!clientCpf || !selected) return;
+		startMock(() => {
+			try {
+				const startsAt = readStartsAt(selected);
+				const noteText = notes.trim() || null;
+				if (mode === "create") {
+					const petId = hiddenFields.pet_id;
+					const serviceId = hiddenFields.service_id;
+					if (!petId || !serviceId) return;
+					const result = mockActions.createAppointment(clientCpf, {
+						petId,
+						serviceId,
+						startsAt,
+						notes: noteText,
+					});
+					if (!result?.ok) throw new DomainError(result?.error ?? "Erro ao agendar.");
+					router.push("/cliente/agendamentos?criado=1");
+					return;
+				}
+				const appointmentId = Number(hiddenFields.appointment_id);
+				if (!Number.isSafeInteger(appointmentId)) return;
+				const result = mockActions.rescheduleAppointment(
+					clientCpf,
+					appointmentId,
+					startsAt,
+					noteText,
+				);
+				if (!result?.ok) throw new DomainError(result?.error ?? "Erro ao remarcar.");
+				router.push("/cliente/agendamentos?remarcado=1");
+			} catch (error) {
+				toast.error(error instanceof DomainError ? error.message : "Não foi possível confirmar.");
+				setSelected("");
+				router.refresh();
+			}
+		});
+	}
+
+	const pending = mocks ? mockPending : isPending;
+
 	return (
-		<form action={formAction} className="space-y-5">
+		<form
+			action={mocks ? undefined : formAction}
+			onSubmit={mocks ? submitMock : undefined}
+			className="space-y-5"
+		>
 			{Object.entries(hiddenFields).map(([name, value]) => (
 				<input key={name} type="hidden" name={name} value={value} />
 			))}
@@ -76,13 +137,14 @@ export function SlotPickerForm({ mode, slots, hiddenFields, defaultNotes }: Prop
 					id="notes"
 					name="notes"
 					maxLength={500}
-					defaultValue={defaultNotes ?? ""}
+					value={notes}
+					onChange={(event) => setNotes(event.target.value)}
 					placeholder="Ex.: pet fica agitado com secador, preferência de corte…"
 				/>
 			</div>
 
-			<Button type="submit" disabled={isPending || !selected}>
-				{isPending
+			<Button type="submit" disabled={pending || !selected}>
+				{pending
 					? "Confirmando…"
 					: mode === "create"
 						? "Confirmar agendamento"

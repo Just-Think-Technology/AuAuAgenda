@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 
+import { isMocksEnabled } from "@/lib/config/mocks";
 import type { OpeningDay } from "@/lib/domain/availability";
+import { mocksFormBlocked } from "@/lib/server/mocks-guard";
 import { DomainError } from "@/lib/domain/errors";
 import { parseTimeOfDay } from "@/lib/domain/time-zone";
 import { toActionError, type FormState } from "@/lib/server/action-result";
@@ -30,6 +32,7 @@ function readOpeningHours(form: FormData): OpeningDay[] {
 }
 
 export async function saveShopSettingsAction(_prev: FormState, formData: FormData): Promise<FormState> {
+	if (isMocksEnabled()) return mocksFormBlocked() ?? { ok: false, error: "" };
 	await requireAdmin();
 	try {
 		await updateShopSettings({

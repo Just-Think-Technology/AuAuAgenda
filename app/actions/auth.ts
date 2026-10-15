@@ -2,13 +2,22 @@
 
 import { redirect } from "next/navigation";
 
+import { isMocksEnabled } from "@/lib/config/mocks";
+import { bumpAdminSessionVersion, bumpClientSessionVersion, getClientSessionVersion } from "@/lib/dal/accounts";
 import { DomainError } from "@/lib/domain/errors";
 import { GENERIC_ERROR } from "@/lib/server/action-result";
 import { MANAGEMENT_HOME } from "@/lib/server/current-user";
 import { clientIp, consumeRateLimit } from "@/lib/server/rate-limit";
-import { createAdminSession, createClientSession, deleteAdminSession, deleteClientSession } from "@/lib/server/session";
-import { continueWithPhone } from "@/lib/use-cases/account/continue-with-phone";
+import {
+	createAdminSession,
+	createClientSession,
+	deleteAdminSession,
+	deleteClientSession,
+	readAdminSession,
+	readClientSession,
+} from "@/lib/server/session";
 import { authenticateAdmin } from "@/lib/use-cases/account/credentials";
+import { continueWithPhone } from "@/lib/use-cases/account/continue-with-phone";
 import { requestPasswordReset, resetPassword } from "@/lib/use-cases/account/password-reset";
 import { registerClient } from "@/lib/use-cases/account/register-client";
 import {
@@ -35,20 +44,85 @@ function errorMessage(error: unknown, context: string): string {
 
 async function underLimit(scope: string, key: string, max: number): Promise<boolean> {
 	const ip = await clientIp();
-	return consumeRateLimit(`${scope}:${key || ip}`, max, FIFTEEN_MINUTES) &&
-		consumeRateLimit(`${scope}:ip:${ip}`, max * 5, FIFTEEN_MINUTES);
+	return (
+		(await consumeRateLimit(`${scope}:${key || ip}`, max, FIFTEEN_MINUTES)) &&
+		(await consumeRateLimit(`${scope}:ip:${ip}`, max * 5, FIFTEEN_MINUTES))
+	);
 }
 
-/** Customer entry: the phone finds the account or creates it, then opens the same session. */
+/** Customer entry: the phone finds the account or creates it, then opens the session. */
+/** Demo only: refresh JWT after profile edits (no redirect). */
+export async function mockSyncClientSessionAction(input: {
+	cpf: string;
+	name: string;
+	email?: string | null;
+	sessionVersion: number;
+}): Promise<{ error?: string }> {
+	if (!isMocksEnabled()) return { error: GENERIC_ERROR };
+	try {
+		await createClientSession(input.cpf, input.sessionVersion, {
+			name: input.name,
+			email: input.email ?? null,
+		});
+	} catch (error) {
+		return { error: errorMessage(error, "mockSyncClientSessionAction") };
+	}
+	return {};
+}
+
+/** Demo only: session from client-side localStorage account (MOCKS=true). */
+export async function mockContinueWithPhoneAction(input: {
+	cpf: string;
+	name: string;
+	sessionVersion: number;
+}): Promise<{ error?: string }> {
+	if (!isMocksEnabled()) return { error: GENERIC_ERROR };
+	try {
+		if (!(await underLimit("phone-login", input.cpf, 20))) return { error: TOO_MANY_ATTEMPTS };
+		await createClientSession(input.cpf, input.sessionVersion, {
+			name: input.name,
+			email: null,
+		});
+	} catch (error) {
+		return { error: errorMessage(error, "mockContinueWithPhoneAction") };
+	}
+	redirect("/cliente");
+}
+
+/** Demo only: admin session after client-side credential check (MOCKS=true). */
+export async function mockAdminLoginAction(input: {
+	adminId: string;
+	name: string;
+	email: string;
+	sessionVersion: number;
+}): Promise<{ error?: string }> {
+	if (!isMocksEnabled()) return { error: GENERIC_ERROR };
+	try {
+		if (!(await underLimit("admin-login", input.email, 20))) return { error: TOO_MANY_ATTEMPTS };
+		await createAdminSession(input.adminId, input.sessionVersion, {
+			name: input.name,
+			email: input.email,
+		});
+	} catch (error) {
+		return { error: errorMessage(error, "mockAdminLoginAction") };
+	}
+	redirect(MANAGEMENT_HOME);
+}
+
 export async function continueWithPhoneAction(
 	_prev: AuthFormState,
 	formData: FormData,
 ): Promise<AuthFormState> {
+	if (isMocksEnabled()) {
+		return { error: "Use o login por telefone na demonstração." };
+	}
 	try {
 		const phone = requiredPhone(formData);
 		if (!(await underLimit("phone-login", phone, 5))) return { error: TOO_MANY_ATTEMPTS };
 		const { cpf } = await continueWithPhone(phone);
-		await createClientSession(cpf);
+		const sessionVersion = await getClientSessionVersion(cpf);
+		if (sessionVersion === null) throw new DomainError("Conta não encontrada.");
+		await createClientSession(cpf, sessionVersion);
 	} catch (error) {
 		return { error: errorMessage(error, "continueWithPhoneAction") };
 	}
@@ -57,6 +131,9 @@ export async function continueWithPhoneAction(
 
 /** Management entry. Customers do not use e-mail and password. */
 export async function loginAction(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
+	if (isMocksEnabled()) {
+		return { error: "Use as credenciais de demonstração na tela de gestão." };
+	}
 	let destination: string;
 	try {
 		const email = requiredEmail(formData);
@@ -65,7 +142,7 @@ export async function loginAction(_prev: AuthFormState, formData: FormData): Pro
 		if (!(await underLimit("admin-login", email, 10))) return { error: TOO_MANY_ATTEMPTS };
 
 		const claims = await authenticateAdmin(email, password);
-		await createAdminSession(claims.admin_id);
+		await createAdminSession(claims.admin_id, claims.sv);
 		destination = MANAGEMENT_HOME;
 	} catch (error) {
 		return { error: errorMessage(error, "loginAction") };
@@ -74,6 +151,9 @@ export async function loginAction(_prev: AuthFormState, formData: FormData): Pro
 }
 
 export async function signupAction(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
+	if (isMocksEnabled()) {
+		return { error: "Cadastro indisponível no modo demonstração." };
+	}
 	try {
 		if (formData.get("terms") !== "on") {
 			return { error: "Você precisa aceitar os termos de uso." };
@@ -97,7 +177,9 @@ export async function signupAction(_prev: AuthFormState, formData: FormData): Pr
 			},
 			{ requireBirthDate: true },
 		);
-		await createClientSession(cpf);
+		const sessionVersion = await getClientSessionVersion(cpf);
+		if (sessionVersion === null) throw new DomainError("Conta não encontrada.");
+		await createClientSession(cpf, sessionVersion);
 	} catch (error) {
 		return { error: errorMessage(error, "signupAction") };
 	}
@@ -108,6 +190,9 @@ export async function forgotPasswordAction(
 	_prev: ResultFormState,
 	formData: FormData,
 ): Promise<ResultFormState> {
+	if (isMocksEnabled()) {
+		return { error: "Recuperação de senha indisponível no modo demonstração." };
+	}
 	try {
 		const email = requiredEmail(formData);
 		if (!(await underLimit("forgot", email, 5))) return { error: TOO_MANY_ATTEMPTS };
@@ -124,6 +209,9 @@ export async function resetPasswordAction(
 	_prev: ResultFormState,
 	formData: FormData,
 ): Promise<ResultFormState> {
+	if (isMocksEnabled()) {
+		return { error: "Recuperação de senha indisponível no modo demonstração." };
+	}
 	try {
 		const token = optionalText(formData, "token", 128);
 		if (!token) return { error: "Link de recuperação inválido ou ausente. Solicite um novo." };
@@ -136,11 +224,15 @@ export async function resetPasswordAction(
 }
 
 export async function logoutAction(): Promise<void> {
+	const claims = await readClientSession();
+	if (claims && !isMocksEnabled()) await bumpClientSessionVersion(claims.cpf);
 	await deleteClientSession();
 	redirect("/");
 }
 
 export async function logoutAdminAction(): Promise<void> {
+	const claims = await readAdminSession();
+	if (claims && !isMocksEnabled()) await bumpAdminSessionVersion(claims.admin_id);
 	await deleteAdminSession();
 	redirect(MANAGEMENT_HOME);
 }

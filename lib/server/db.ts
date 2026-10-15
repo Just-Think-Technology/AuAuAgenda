@@ -2,6 +2,7 @@ import "server-only";
 
 import { PrismaPg } from "@prisma/adapter-pg";
 
+import { isMocksEnabled } from "@/lib/config/mocks";
 import { PrismaClient } from "@/lib/generated/prisma/client";
 
 function createClient(): PrismaClient {
@@ -14,12 +15,25 @@ function createClient(): PrismaClient {
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
-/** One client per process; dev hot reload reuses the cached instance. */
-export const db: PrismaClient = globalForPrisma.prisma ?? createClient();
-
-if (process.env.NODE_ENV !== "production") {
-	globalForPrisma.prisma = db;
+function requireDb(): PrismaClient {
+	if (isMocksEnabled()) {
+		throw new Error("Database access is disabled when MOCKS=true.");
+	}
+	const client = globalForPrisma.prisma ?? createClient();
+	if (process.env.NODE_ENV !== "production") {
+		globalForPrisma.prisma = client;
+	}
+	return client;
 }
+
+/** One client per process; unavailable when MOCKS=true. */
+export const db = new Proxy({} as PrismaClient, {
+	get(_target, prop, receiver) {
+		const client = requireDb();
+		const value = Reflect.get(client, prop, receiver);
+		return typeof value === "function" ? value.bind(client) : value;
+	},
+});
 
 export type Tx = Parameters<Parameters<PrismaClient["$transaction"]>[0]>[0];
 

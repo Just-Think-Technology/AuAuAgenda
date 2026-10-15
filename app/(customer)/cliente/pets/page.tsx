@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 
+import { MockCustomerPets } from "@/components/mock/pages/customer-pets";
 import { PetsView } from "@/components/pets/pets-view";
+import { isMocksEnabled } from "@/lib/config/mocks";
 import type { Option } from "@/components/pets/pet-form-dialog";
 import { listBreeds, listPetsByOwner, listSpecies } from "@/lib/dal/pets";
 import { requireClient } from "@/lib/server/current-user";
@@ -9,6 +11,7 @@ export const metadata: Metadata = { title: "Pets" };
 
 export default async function CustomerPetsPage() {
 	const user = await requireClient();
+	if (isMocksEnabled()) return <MockCustomerPets user={user} />;
 	const [pets, species, breeds] = await Promise.all([
 		listPetsByOwner(user.cpf),
 		listSpecies(),

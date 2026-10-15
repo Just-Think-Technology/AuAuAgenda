@@ -5,6 +5,8 @@ import { Trash2Icon } from "lucide-react";
 import { toast } from "sonner";
 
 import { deleteServiceAction } from "@/app/actions/services";
+import { isMocksPublic } from "@/lib/config/mocks-public";
+import { useMockDomainActions } from "@/lib/mock/client-actions";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -16,12 +18,14 @@ import {
 } from "@/components/ui/dialog";
 
 export function DeleteServiceButton({ serviceId, name }: { serviceId: string; name: string }) {
+	const mocks = isMocksPublic();
+	const mockActions = useMockDomainActions();
 	const [open, setOpen] = useState(false);
 	const [isPending, startTransition] = useTransition();
 
 	function confirm() {
 		startTransition(async () => {
-			const result = await deleteServiceAction(serviceId);
+			const result = mocks ? mockActions.removeService(serviceId) : await deleteServiceAction(serviceId);
 			if (result.ok) {
 				toast.success(result.message);
 				setOpen(false);

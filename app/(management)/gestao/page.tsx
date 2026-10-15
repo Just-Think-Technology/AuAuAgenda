@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { MockManagementAgenda } from "@/components/mock/pages/management-agenda";
 import { EmptyState, PageHeader } from "@/components/layouts/page-header";
+import { isMocksEnabled } from "@/lib/config/mocks";
 import { AgendaEntryCard } from "@/components/management/agenda-entry-card";
 import { AgendaFilters, agendaHref, type AgendaQuery } from "@/components/management/agenda-filters";
 import { Button } from "@/components/ui/button";
@@ -25,6 +27,7 @@ type Props = { searchParams: Promise<{ date?: string; status?: string; service?:
 
 export default async function DailyAgendaPage({ searchParams }: Props) {
 	if (!(await getCurrentAdmin())) return null;
+	if (isMocksEnabled()) return <MockManagementAgenda />;
 	const [params, settings, services] = await Promise.all([
 		searchParams,
 		getShopSettings(),

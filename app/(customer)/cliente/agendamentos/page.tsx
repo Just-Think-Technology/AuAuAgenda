@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PlusIcon } from "lucide-react";
 
+import { MockCustomerAppointments } from "@/components/mock/pages/customer-appointments";
 import { AppointmentList } from "@/components/customer/appointment-list";
+import { isMocksEnabled } from "@/lib/config/mocks";
 import { EmptyState, PageHeader } from "@/components/layouts/page-header";
 import { Button } from "@/components/ui/button";
 import { requireClient } from "@/lib/server/current-user";
@@ -14,6 +16,7 @@ type Props = { searchParams: Promise<{ criado?: string; remarcado?: string }> };
 
 export default async function CustomerAppointmentsPage({ searchParams }: Props) {
 	const user = await requireClient();
+	if (isMocksEnabled()) return <MockCustomerAppointments user={user} />;
 	const params = await searchParams;
 	const now = new Date();
 	const { upcoming, history, timeZone } = await getClientBookings(user.cpf, now);

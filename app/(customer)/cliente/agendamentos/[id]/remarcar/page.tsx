@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { MockCustomerReschedule } from "@/components/mock/pages/customer-reschedule";
 import { AvailableSlots } from "@/components/booking/available-slots";
+import { isMocksEnabled } from "@/lib/config/mocks";
 import { DatePicker } from "@/components/booking/date-picker";
 import { StepSection } from "@/components/booking/step-section";
 import { AppointmentCard } from "@/components/customer/appointment-card";
@@ -28,6 +30,7 @@ export default async function RescheduleAppointmentPage({ params, searchParams }
 	const [{ id }, { date }] = await Promise.all([params, searchParams]);
 	const appointmentId = Number(id);
 	if (!Number.isSafeInteger(appointmentId) || appointmentId < 1) notFound();
+	if (isMocksEnabled()) return <MockCustomerReschedule user={user} appointmentId={appointmentId} />;
 
 	const [booking, settings] = await Promise.all([
 		findClientBooking(appointmentId, user.cpf),

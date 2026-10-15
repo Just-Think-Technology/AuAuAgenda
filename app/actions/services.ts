@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { isMocksEnabled } from "@/lib/config/mocks";
 import { PET_SIZES } from "@/lib/domain/pet-size";
+import { mocksDomainBlocked, mocksFormBlocked } from "@/lib/server/mocks-guard";
 import { toActionError, type ActionResult, type FormState } from "@/lib/server/action-result";
 import { requireAdmin } from "@/lib/server/current-user";
 import { removeService, saveService, SERVICE_DURATION } from "@/lib/use-cases/management/services";
@@ -25,6 +27,7 @@ function revalidateCatalog(): void {
 }
 
 export async function saveServiceAction(_prev: FormState, formData: FormData): Promise<FormState> {
+	if (isMocksEnabled()) return mocksFormBlocked() ?? { ok: false, error: "" };
 	await requireAdmin();
 	try {
 		await saveService(optionalUuid(formData, "service_id"), {
@@ -44,6 +47,8 @@ export async function saveServiceAction(_prev: FormState, formData: FormData): P
 }
 
 export async function deleteServiceAction(serviceId: string): Promise<ActionResult> {
+	const blocked = mocksDomainBlocked();
+	if (blocked) return blocked;
 	await requireAdmin();
 	if (!isUuid(serviceId)) return { ok: false, error: "Serviço inválido." };
 	try {

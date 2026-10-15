@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { changeAppointmentStatusAction } from "@/app/actions/agenda";
+import { isMocksPublic } from "@/lib/config/mocks-public";
+import { useMockDomainActions } from "@/lib/mock/client-actions";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -35,6 +37,8 @@ export function StatusActions({
 	status: AppointmentStatus;
 	summary: string;
 }) {
+	const mocks = isMocksPublic();
+	const mockActions = useMockDomainActions();
 	const [isPending, startTransition] = useTransition();
 	const [pendingConfirm, setPendingConfirm] = useState<AppointmentStatus | null>(null);
 	const options = nextStatuses(status);
@@ -42,7 +46,9 @@ export function StatusActions({
 
 	function apply(to: AppointmentStatus) {
 		startTransition(async () => {
-			const result = await changeAppointmentStatusAction({ appointmentId, from: status, to });
+			const result = mocks
+				? mockActions.changeStatus(appointmentId, status, to)
+				: await changeAppointmentStatusAction({ appointmentId, from: status, to });
 			if (result.ok) toast.success(result.message);
 			else toast.error(result.error);
 			setPendingConfirm(null);

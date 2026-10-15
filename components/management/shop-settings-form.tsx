@@ -1,8 +1,14 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useTransition } from "react";
+
+import { toast } from "sonner";
 
 import { saveShopSettingsAction } from "@/app/actions/shop-settings";
+import { isMocksPublic } from "@/lib/config/mocks-public";
+import { DomainError } from "@/lib/domain/errors";
+import { useMockDomainActions } from "@/lib/mock/client-actions";
+import { parseShopSettingsForm } from "@/lib/mock/parse-forms";
 import { PageHeader } from "@/components/layouts/page-header";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
@@ -85,12 +91,36 @@ function DayRow({ day }: { day: OpeningDay }) {
 }
 
 export function ShopSettingsForm({ settings }: { settings: ShopSettingsValues }) {
+	const mocks = isMocksPublic();
+	const mockActions = useMockDomainActions();
 	const [state, formAction, isPending] = useActionState(saveShopSettingsAction, undefined);
+	const [mockPending, startMock] = useTransition();
 	useActionFeedback(state);
 	const zones = TIME_ZONES.includes(settings.timeZone) ? TIME_ZONES : [settings.timeZone, ...TIME_ZONES];
 
+	function submitMock(event: React.FormEvent<HTMLFormElement>) {
+		event.preventDefault();
+		const formData = new FormData(event.currentTarget);
+		startMock(() => {
+			try {
+				const input = parseShopSettingsForm(formData);
+				const result = mockActions.saveShopSettings(input);
+				if (!result || !result.ok) throw new DomainError(result?.error ?? "Erro ao salvar.");
+				toast.success(result.message);
+			} catch (error) {
+				toast.error(error instanceof Error ? error.message : "Erro ao salvar.");
+			}
+		});
+	}
+
+	const pending = mocks ? mockPending : isPending;
+
 	return (
-		<form action={formAction} className="space-y-10">
+		<form
+			action={mocks ? undefined : formAction}
+			onSubmit={mocks ? submitMock : undefined}
+			className="space-y-10"
+		>
 			<PageHeader title="Configurações do pet shop" description="Regras usadas para calcular os horários livres." />
 
 			<section className="grid max-w-3xl gap-4 sm:grid-cols-2" aria-label="Dados gerais">
@@ -137,8 +167,8 @@ export function ShopSettingsForm({ settings }: { settings: ShopSettingsValues })
 				})}
 			</fieldset>
 
-			<Button type="submit" disabled={isPending}>
-				{isPending ? "Salvando…" : "Salvar configurações"}
+			<Button type="submit" disabled={pending}>
+				{pending ? "Salvando…" : "Salvar configurações"}
 			</Button>
 		</form>
 	);

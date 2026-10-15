@@ -11,6 +11,8 @@ import { hashPassword } from "./credentials";
 /** Admin-created accounts may omit the birth date; the column is required, so a placeholder is stored. */
 const UNKNOWN_BIRTH_DATE = new Date("1970-01-01T00:00:00Z");
 
+const SIGNUP_CONFLICT = "Não foi possível concluir o cadastro com esses dados.";
+
 export type NewClient = {
 	cpf: string;
 	name: string;
@@ -43,10 +45,9 @@ export async function registerClient(
 	const birthDate = parseBirthDate(input.birthDate, options.requireBirthDate);
 
 	const conflicts = await findClientConflicts(cpf, input.email);
-	if (conflicts.emailTaken) throw new DomainError("E-mail já cadastrado.");
-	if (conflicts.cpfTaken) throw new DomainError("CPF já cadastrado.");
-	if (input.phone && (await findActiveClientByPhone(input.phone))) {
-		throw new DomainError("Telefone já cadastrado.");
+	const phoneTaken = input.phone ? Boolean(await findActiveClientByPhone(input.phone)) : false;
+	if (conflicts.emailTaken || conflicts.cpfTaken || phoneTaken) {
+		throw new DomainError(SIGNUP_CONFLICT);
 	}
 
 	try {
@@ -59,7 +60,7 @@ export async function registerClient(
 			phone: input.phone,
 		});
 	} catch (error) {
-		if (isUniqueViolation(error)) throw new DomainError("CPF, e-mail ou telefone já cadastrado.");
+		if (isUniqueViolation(error)) throw new DomainError(SIGNUP_CONFLICT);
 		throw error;
 	}
 }

@@ -1,9 +1,15 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useTransition } from "react";
 import { PlusIcon } from "lucide-react";
 
+import { toast } from "sonner";
+
 import { createClientAction } from "@/app/actions/admin-clients";
+import { isMocksPublic } from "@/lib/config/mocks-public";
+import { normalizeCpf } from "@/lib/domain/cpf";
+import { normalizePhone } from "@/lib/domain/phone";
+import { useMockDomainActions } from "@/lib/mock/client-actions";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -27,12 +33,46 @@ function maskCpf(value: string): string {
 }
 
 function NewClientForm({ onDone }: { onDone: () => void }) {
+	const mocks = isMocksPublic();
+	const mockActions = useMockDomainActions();
 	const [state, formAction, isPending] = useActionState(createClientAction, undefined);
+	const [mockPending, startMock] = useTransition();
 	const [cpf, setCpf] = useState("");
 	useActionFeedback(state, onDone);
 
+	function submitMock(event: React.FormEvent<HTMLFormElement>) {
+		event.preventDefault();
+		const formData = new FormData(event.currentTarget);
+		startMock(() => {
+			const cpfValue = normalizeCpf(String(formData.get("cpf") ?? ""));
+			const phone = normalizePhone(String(formData.get("phone") ?? ""));
+			if (!cpfValue || !phone) {
+				toast.error("CPF ou telefone inválido.");
+				return;
+			}
+			const result = mockActions.createClientAccount({
+				name: String(formData.get("name") ?? "").trim(),
+				cpf: cpfValue,
+				email: String(formData.get("email") ?? "").trim(),
+				phone,
+			});
+			if (result?.ok) {
+				toast.success(result.message);
+				onDone();
+			} else {
+				toast.error(result?.error ?? "Erro ao cadastrar.");
+			}
+		});
+	}
+
+	const pending = mocks ? mockPending : isPending;
+
 	return (
-		<form action={formAction} className="flex flex-col gap-4">
+		<form
+			action={mocks ? undefined : formAction}
+			onSubmit={mocks ? submitMock : undefined}
+			className="flex flex-col gap-4"
+		>
 			<Field htmlFor="client-name" label="Nome">
 				<Input id="client-name" name="name" required maxLength={255} autoComplete="off" />
 			</Field>
@@ -68,11 +108,11 @@ function NewClientForm({ onDone }: { onDone: () => void }) {
 				<PasswordInput id="client-password-confirm" name="password_confirm" required minLength={8} autoComplete="new-password" />
 			</Field>
 			<DialogFooter>
-				<Button type="button" variant="outline" onClick={onDone} disabled={isPending}>
+				<Button type="button" variant="outline" onClick={onDone} disabled={pending}>
 					Cancelar
 				</Button>
-				<Button type="submit" disabled={isPending}>
-					{isPending ? "Cadastrando…" : "Cadastrar"}
+				<Button type="submit" disabled={pending}>
+					{pending ? "Cadastrando…" : "Cadastrar"}
 				</Button>
 			</DialogFooter>
 		</form>

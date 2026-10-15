@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { MockManagementServiceForm } from "@/components/mock/pages/management-service-form";
 import { PageHeader } from "@/components/layouts/page-header";
+import { isMocksEnabled } from "@/lib/config/mocks";
 import { ServiceForm } from "@/components/management/service-form";
 import { listSpecies } from "@/lib/dal/pets";
 import { findService } from "@/lib/dal/services";
@@ -14,6 +16,7 @@ export default async function EditServicePage({ params }: { params: Promise<{ id
 	await requireAdmin();
 	const { id } = await params;
 	if (!isUuid(id)) notFound();
+	if (isMocksEnabled()) return <MockManagementServiceForm serviceId={id} />;
 	const [service, species] = await Promise.all([findService(id), listSpecies()]);
 	if (!service) notFound();
 

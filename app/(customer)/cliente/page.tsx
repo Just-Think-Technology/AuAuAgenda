@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PlusIcon } from "lucide-react";
 
+import { MockCustomerHome } from "@/components/mock/pages/customer-home";
 import { AppointmentList } from "@/components/customer/appointment-list";
+import { isMocksEnabled } from "@/lib/config/mocks";
 import { EmptyState, PageHeader } from "@/components/layouts/page-header";
 import { Button } from "@/components/ui/button";
 import { listPetsByOwner } from "@/lib/dal/pets";
@@ -14,6 +16,7 @@ export const metadata: Metadata = { title: "Início" };
 
 export default async function CustomerHomePage() {
 	const user = await requireClient();
+	if (isMocksEnabled()) return <MockCustomerHome user={user} />;
 	const now = new Date();
 	const [{ upcoming, timeZone }, pets] = await Promise.all([
 		getClientBookings(user.cpf, now),
