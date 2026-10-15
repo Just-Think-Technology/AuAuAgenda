@@ -1,7 +1,8 @@
 import "server-only";
 
 import { findActiveClientByPhone, insertPhoneClient } from "@/lib/dal/accounts";
-import { newPhoneAccountId, PHONE_ACCOUNT_NAME } from "@/lib/domain/account-id";
+import { PHONE_ACCOUNT_NAME } from "@/lib/domain/account-id";
+import { newPhoneAccountId } from "@/lib/domain/phone-account-id";
 import { DomainError } from "@/lib/domain/errors";
 import { normalizePhone } from "@/lib/domain/phone";
 import { isUniqueViolation } from "@/lib/server/db";

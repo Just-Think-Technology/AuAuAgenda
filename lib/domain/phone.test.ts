@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { isPhoneAccountId, newPhoneAccountId } from "./account-id.ts";
+import { isPhoneAccountId } from "./account-id.ts";
+import { newPhoneAccountId } from "./phone-account-id.ts";
 import { isValidCpf } from "./cpf.ts";
 import { normalizePhone } from "./phone.ts";
 
