@@ -92,7 +92,7 @@ export function ClientsView({ clients }: { clients: ManagedClient[] }) {
 					<DialogHeader className="gap-2">
 						<DialogTitle>Remover {toDelete?.name}?</DialogTitle>
 						<DialogDescription>
-							A conta deixa de acessar o sistema. O histórico de atendimentos é mantido.
+							A conta, os pets e os agendamentos deste cliente saem da operação. Os registros ficam arquivados.
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter>

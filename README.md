@@ -37,7 +37,7 @@ MOCKS=true JWT_SECRET="$(openssl rand -base64 48)" pnpm dev
 ```
 
 - Cliente: login por telefone em `/` (mesmo fluxo visual).
-- Gestão: `/gestao` — botão **Entrar na gestão** (sem e-mail/senha na tela).
+- Gestão: `/gestao` (sem sessão redireciona para `/gestao/entrar`) — botão **Entrar na gestão** (sem e-mail/senha na tela).
 - Cadastro por e-mail, esqueci senha e reset não estão disponíveis na demo.
 
 Credenciais fixas de demo existem só no código (`lib/mock/constants.ts`) para referência de quem mantém o projeto; quem testa o produto não precisa delas.
@@ -121,5 +121,5 @@ Veja `.env.example`. `API_URL` e `APP_API_KEY` do antigo backend Express não s�
 
 - O backend Express e o frontend separado foram removidos. O histórico original está no repositório `petconnect-uscs/website`.
 - O envio de foto do pet foi descontinuado. Fotos antigas com URL HTTPS continuam aparecendo; nos demais casos é usada a imagem da raça.
-- O limite de tentativas de login, OTP e recuperação de senha usa a tabela `auth_rate_limit` no Postgres. Defina `TRUST_PLATFORM_IP=1` em produção quando o proxy definir `x-real-ip` com o endereço real do cliente.
+- O limite de tentativas de login, OTP e recuperação de senha usa a tabela `auth_rate_limit` no Postgres. Em produção (Hostinger ou outro proxy), defina `TRUST_PLATFORM_IP=1` para o app usar `x-real-ip` ou o primeiro IP de `x-forwarded-for`. Sem isso, todas as tentativas compartilham o bucket `unknown` e o limite por IP não isola atacantes.
 - A remoção de clientes e serviços é lógica (`deleted_at`), preservando o histórico.

@@ -415,13 +415,22 @@ export function createClientAccount(
 
 export function softDeleteClient(store: MockDatabase, cpf: string): MockDatabase {
 	const next = clone(store);
-	const now = new Date();
-	if (hasUpcomingBooking(next, { clientCpf: cpf }, now)) {
-		throw new DomainError("Cliente com agendamentos futuros não pode ser removido.");
-	}
 	const client = next.clients.find((c) => c.cpf === cpf && !c.deletedAt);
 	if (!client) throw new DomainError("Cliente não encontrado.");
-	client.deletedAt = now.toISOString();
+	const now = new Date().toISOString();
+	client.deletedAt = now;
+	client.updatedAt = now;
+	client.sessionVersion += 1;
+	const petIds = new Set(next.pets.filter((pet) => pet.clientCpf === cpf).map((pet) => pet.petId));
+	for (const pet of next.pets) {
+		if (pet.clientCpf === cpf && !pet.deletedAt) pet.deletedAt = now;
+	}
+	for (const appointment of next.appointments) {
+		if (appointment.deletedAt) continue;
+		if (appointment.clientCpf === cpf || petIds.has(appointment.petId)) {
+			appointment.deletedAt = now;
+		}
+	}
 	return next;
 }
 

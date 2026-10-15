@@ -13,7 +13,7 @@ import { getShopSettings } from "@/lib/dal/shop";
 import { isAppointmentStatus, STATUS_LABELS } from "@/lib/domain/appointment-status";
 import { dayRange, isDateKey, todayKey } from "@/lib/domain/time-zone";
 import { formatDateKey } from "@/lib/format";
-import { getCurrentAdmin } from "@/lib/server/current-user";
+import { getCurrentAdmin, requireAdmin } from "@/lib/server/current-user";
 import { isUuid } from "@/lib/validation/form";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -26,7 +26,7 @@ const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1
 type Props = { searchParams: Promise<{ date?: string; status?: string; service?: string }> };
 
 export default async function DailyAgendaPage({ searchParams }: Props) {
-	if (!(await getCurrentAdmin())) return null;
+	await requireAdmin();
 	if (isMocksEnabled()) return <MockManagementAgenda />;
 	const [params, settings, services] = await Promise.all([
 		searchParams,

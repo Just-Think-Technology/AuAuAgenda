@@ -47,6 +47,7 @@ export async function deleteClientAction(cpf: string): Promise<ActionResult> {
 	} catch (error) {
 		return toActionError(error, "deleteClientAction");
 	}
-	revalidatePath("/gestao/clientes");
+	revalidatePath("/gestao", "layout");
+	revalidatePath("/cliente", "layout");
 	return { ok: true, message: "Cliente removido." };
 }

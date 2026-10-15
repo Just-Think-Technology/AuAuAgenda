@@ -5,8 +5,9 @@ import { redirect } from "next/navigation";
 import { isMocksEnabled } from "@/lib/config/mocks";
 import { bumpAdminSessionVersion, bumpClientSessionVersion, getClientSessionVersion } from "@/lib/dal/accounts";
 import { DomainError } from "@/lib/domain/errors";
+import { DEMO_ADMIN_IDENTITY } from "@/lib/mock/constants";
 import { GENERIC_ERROR } from "@/lib/server/action-result";
-import { MANAGEMENT_HOME } from "@/lib/server/current-user";
+import { MANAGEMENT_HOME, MANAGEMENT_LOGIN } from "@/lib/server/current-user";
 import { clientIp, consumeRateLimit } from "@/lib/server/rate-limit";
 import {
 	createAdminSession,
@@ -21,13 +22,14 @@ import { continueWithPhone } from "@/lib/use-cases/account/continue-with-phone";
 import { requestPasswordReset, resetPassword } from "@/lib/use-cases/account/password-reset";
 import { registerClient } from "@/lib/use-cases/account/register-client";
 import {
+	loginPassword,
+	newPassword,
 	optionalPhone,
+	optionalText,
 	rawPassword,
 	requiredEmail,
-	requiredText,
-	newPassword,
-	optionalText,
 	requiredPhone,
+	requiredText,
 } from "@/lib/validation/form";
 
 type AuthFormState = { error?: string } | undefined;
@@ -86,22 +88,17 @@ export async function mockContinueWithPhoneAction(input: {
 	} catch (error) {
 		return { error: errorMessage(error, "mockContinueWithPhoneAction") };
 	}
-	redirect("/cliente");
+	return {};
 }
 
-/** Demo only: admin session after client-side credential check (MOCKS=true). */
-export async function mockAdminLoginAction(input: {
-	adminId: string;
-	name: string;
-	email: string;
-	sessionVersion: number;
-}): Promise<{ error?: string }> {
-	if (!isMocksEnabled()) return { error: GENERIC_ERROR };
+/** Demo only: admin session from server-side seed identity (MOCKS=true, never production). */
+export async function mockAdminLoginAction(): Promise<{ error?: string }> {
+	if (!isMocksEnabled() || process.env.NODE_ENV === "production") return { error: GENERIC_ERROR };
 	try {
-		if (!(await underLimit("admin-login", input.email, 20))) return { error: TOO_MANY_ATTEMPTS };
-		await createAdminSession(input.adminId, input.sessionVersion, {
-			name: input.name,
-			email: input.email,
+		if (!(await underLimit("admin-login", "demo-admin", 20))) return { error: TOO_MANY_ATTEMPTS };
+		await createAdminSession(DEMO_ADMIN_IDENTITY.adminId, DEMO_ADMIN_IDENTITY.sessionVersion, {
+			name: DEMO_ADMIN_IDENTITY.name,
+			email: DEMO_ADMIN_IDENTITY.email,
 		});
 	} catch (error) {
 		return { error: errorMessage(error, "mockAdminLoginAction") };
@@ -137,8 +134,7 @@ export async function loginAction(_prev: AuthFormState, formData: FormData): Pro
 	let destination: string;
 	try {
 		const email = requiredEmail(formData);
-		const password = rawPassword(formData);
-		if (!password) return { error: "E-mail e senha são obrigatórios." };
+		const password = loginPassword(formData);
 		if (!(await underLimit("admin-login", email, 10))) return { error: TOO_MANY_ATTEMPTS };
 
 		const claims = await authenticateAdmin(email, password);
@@ -234,5 +230,5 @@ export async function logoutAdminAction(): Promise<void> {
 	const claims = await readAdminSession();
 	if (claims && !isMocksEnabled()) await bumpAdminSessionVersion(claims.admin_id);
 	await deleteAdminSession();
-	redirect(MANAGEMENT_HOME);
+	redirect(MANAGEMENT_LOGIN);
 }

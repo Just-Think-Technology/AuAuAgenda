@@ -1,5 +1,6 @@
 import { isValidCpf, normalizeCpf } from "@/lib/domain/cpf";
 import { DomainError } from "@/lib/domain/errors";
+import { assertLoginPassword } from "@/lib/domain/login-password";
 import { normalizePhone } from "@/lib/domain/phone";
 
 /**
@@ -128,6 +129,11 @@ export function newPassword(form: FormData, key = "password", confirmKey = "pass
 
 export function rawPassword(form: FormData, key = "password"): string {
 	return raw(form, key);
+}
+
+/** Existing management password. Caps at 72 bytes (bcrypt) without a minimum, so legacy hashes still work. */
+export function loginPassword(form: FormData, key = "password"): string {
+	return assertLoginPassword(raw(form, key));
 }
 
 export function requiredPhone(form: FormData, key = "phone"): string {

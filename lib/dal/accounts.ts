@@ -236,12 +236,53 @@ export async function listClientsWithPets() {
 	});
 }
 
-/** Soft delete keeps appointment history intact. */
+/**
+ * Soft-deletes the account and everything that belongs to it.
+ * Rows stay in the database; active queries ignore `deleted_at`.
+ * The session version changes so an existing cookie stops working.
+ */
 export async function softDeleteClient(cpf: string) {
 	const now = new Date();
-	const result = await db.client.updateMany({
-		where: { cpf, deleted_at: null },
-		data: { deleted_at: now, updated_at: now },
+	return db.$transaction(async (tx) => {
+		const pets = await tx.pet.findMany({
+			where: { client_cpf: cpf },
+			select: { pet_id: true },
+		});
+		const petIds = pets.map((pet) => pet.pet_id);
+		const result = await tx.client.updateMany({
+			where: { cpf, deleted_at: null },
+			data: {
+				deleted_at: now,
+				updated_at: now,
+				session_version: { increment: 1 },
+			},
+		});
+		if (result.count !== 1) return false;
+
+		if (petIds.length > 0) {
+			await tx.pet.updateMany({
+				where: { pet_id: { in: petIds }, deleted_at: null },
+				data: { deleted_at: now, updated_at: now },
+			});
+		}
+		await tx.appointment.updateMany({
+			where: {
+				deleted_at: null,
+				OR: [{ client_cpf: cpf }, ...(petIds.length > 0 ? [{ pet_id: { in: petIds } }] : [])],
+			},
+			data: { deleted_at: now, updated_at: now },
+		});
+		await tx.recipe.updateMany({
+			where: {
+				deleted_at: null,
+				OR: [{ client_cpf: cpf }, ...(petIds.length > 0 ? [{ pet_id: { in: petIds } }] : [])],
+			},
+			data: { deleted_at: now, updated_at: now },
+		});
+		await tx.password_reset_token.updateMany({
+			where: { client_cpf: cpf, used_at: null },
+			data: { used_at: now },
+		});
+		return true;
 	});
-	return result.count === 1;
 }

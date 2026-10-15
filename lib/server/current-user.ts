@@ -11,6 +11,7 @@ import type { AuthUser } from "@/lib/types";
 
 export const CUSTOMER_HOME = "/cliente";
 export const MANAGEMENT_HOME = "/gestao";
+export const MANAGEMENT_LOGIN = "/gestao/entrar";
 
 export function homeFor(user: Pick<AuthUser, "role">): string {
 	return user.role === "admin" ? MANAGEMENT_HOME : CUSTOMER_HOME;
@@ -52,9 +53,9 @@ export async function requireClient(): Promise<Extract<AuthUser, { role: "client
 	return user;
 }
 
-/** Valid admin cookie required. Otherwise the management entry asks for login. */
+/** Valid admin cookie required. Otherwise redirect to /gestao/entrar. */
 export async function requireAdmin(): Promise<Extract<AuthUser, { role: "admin" }>> {
 	const admin = await getCurrentAdmin();
-	if (!admin) redirect(MANAGEMENT_HOME);
+	if (!admin) redirect(MANAGEMENT_LOGIN);
 	return admin;
 }

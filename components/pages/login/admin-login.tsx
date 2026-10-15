@@ -9,7 +9,6 @@ import { toast } from "sonner";
 import { loginAction, mockAdminLoginAction } from "@/app/actions/auth";
 import { AuthLayout } from "@/components/layouts/auth-layout";
 import { isMocksPublic } from "@/lib/config/mocks-public";
-import { ensureSeed } from "@/lib/mock/storage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,13 +19,7 @@ function MockAdminLogin() {
 
 	function enterDemo() {
 		startLogin(async () => {
-			const store = ensureSeed();
-			const response = await mockAdminLoginAction({
-				adminId: store.admin.adminId,
-				name: store.admin.name,
-				email: store.admin.email,
-				sessionVersion: store.admin.sessionVersion,
-			});
+			const response = await mockAdminLoginAction();
 			if (response?.error) toast.error(response.error);
 		});
 	}

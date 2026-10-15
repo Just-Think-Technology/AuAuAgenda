@@ -1,7 +1,7 @@
 import { PHONE_ACCOUNT_NAME } from "@/lib/domain/account-id";
 import { addDays, addMinutes, todayKey, weekdayOf, zonedToInstant } from "@/lib/domain/time-zone";
 
-import { MOCK_ADMIN_ID, MOCK_DEMO_ADMIN_EMAIL } from "./constants";
+import { DEMO_ADMIN_IDENTITY } from "./constants";
 import type { MockDatabase } from "./types";
 
 const SPECIES_DOG = "a0000001-0001-4000-8000-000000000001";
@@ -45,10 +45,10 @@ export function createSeedDatabase(now = new Date()): MockDatabase {
 		version: 1,
 		nextAppointmentId: 2,
 		admin: {
-			adminId: MOCK_ADMIN_ID,
-			name: "Equipe Demo",
-			email: MOCK_DEMO_ADMIN_EMAIL,
-			sessionVersion: 0,
+			adminId: DEMO_ADMIN_IDENTITY.adminId,
+			name: DEMO_ADMIN_IDENTITY.name,
+			email: DEMO_ADMIN_IDENTITY.email,
+			sessionVersion: DEMO_ADMIN_IDENTITY.sessionVersion,
 		},
 		clients: [
 			{

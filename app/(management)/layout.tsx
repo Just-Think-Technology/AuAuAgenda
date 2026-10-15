@@ -1,6 +1,5 @@
 import { logoutAdminAction } from "@/app/actions/auth";
 import { AppShell } from "@/components/layouts/app-shell";
-import { AdminLogin } from "@/components/pages/login/admin-login";
 import type { NavItem } from "@/components/sidebar";
 import { getCurrentAdmin } from "@/lib/server/current-user";
 
@@ -12,7 +11,7 @@ const NAV: NavItem[] = [
 
 export default async function ManagementLayout({ children }: { children: React.ReactNode }) {
 	const user = await getCurrentAdmin();
-	if (!user) return <AdminLogin />;
+	if (!user) return children;
 	return (
 		<AppShell user={user} items={NAV} settingsHref="/gestao/configuracoes" signOut={logoutAdminAction}>
 			{children}

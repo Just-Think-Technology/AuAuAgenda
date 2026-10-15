@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 
 import { Link } from "next-view-transitions";
 
@@ -19,6 +20,7 @@ import { Label } from "@/components/ui/label";
 
 export function Login() {
 	const mocks = isMocksPublic();
+	const router = useRouter();
 	const [state, formAction, isPending] = useActionState(continueWithPhoneAction, undefined);
 	const [phone, setPhone] = useState("");
 	const [mockPending, startMock] = useTransition();
@@ -41,6 +43,7 @@ export function Login() {
 					sessionVersion: result.sessionVersion,
 				});
 				if (response?.error) toast.error(response.error);
+				else router.push("/cliente");
 			} catch (error) {
 				toast.error(error instanceof Error ? error.message : "Não foi possível entrar.");
 			}
