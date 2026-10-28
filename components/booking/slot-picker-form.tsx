@@ -11,10 +11,10 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
-import { isMocksPublic } from "@/lib/config/mocks-public";
+import { isMocksPublic } from "@/lib/demo/enabled-public";
 import { DomainError } from "@/lib/domain/errors";
 import { toast } from "sonner";
-import { useMockDomainActions } from "@/lib/mock/client-actions";
+import { useMockDomainActions } from "@/lib/demo/client-actions";
 import { cn } from "@/lib/utils";
 
 export type SlotOption = { value: string; label: string; freeStations: number };
@@ -24,7 +24,7 @@ type Props = {
 	slots: SlotOption[];
 	hiddenFields: Record<string, string>;
 	defaultNotes?: string | null;
-	clientCpf?: string;
+	clientId?: string;
 	excludeId?: number;
 };
 
@@ -39,8 +39,8 @@ function readStartsAt(value: string): Date {
 	return date;
 }
 
-export function SlotPickerForm({ mode, slots, hiddenFields, defaultNotes, clientCpf }: Props) {
-	const mocks = isMocksPublic() && Boolean(clientCpf);
+export function SlotPickerForm({ mode, slots, hiddenFields, defaultNotes, clientId }: Props) {
+	const mocks = isMocksPublic() && Boolean(clientId);
 	const [state, formAction, isPending] = useActionState(ACTIONS[mode], undefined);
 	const mockActions = useMockDomainActions();
 	const [mockPending, startMock] = useTransition();
@@ -55,7 +55,7 @@ export function SlotPickerForm({ mode, slots, hiddenFields, defaultNotes, client
 
 	function submitMock(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
-		if (!clientCpf || !selected) return;
+		if (!clientId || !selected) return;
 		startMock(() => {
 			try {
 				const startsAt = readStartsAt(selected);
@@ -64,7 +64,7 @@ export function SlotPickerForm({ mode, slots, hiddenFields, defaultNotes, client
 					const petId = hiddenFields.pet_id;
 					const serviceId = hiddenFields.service_id;
 					if (!petId || !serviceId) return;
-					const result = mockActions.createAppointment(clientCpf, {
+					const result = mockActions.createAppointment(clientId, {
 						petId,
 						serviceId,
 						startsAt,
@@ -77,7 +77,7 @@ export function SlotPickerForm({ mode, slots, hiddenFields, defaultNotes, client
 				const appointmentId = Number(hiddenFields.appointment_id);
 				if (!Number.isSafeInteger(appointmentId)) return;
 				const result = mockActions.rescheduleAppointment(
-					clientCpf,
+					clientId,
 					appointmentId,
 					startsAt,
 					noteText,

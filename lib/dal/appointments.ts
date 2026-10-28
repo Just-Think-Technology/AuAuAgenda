@@ -92,7 +92,7 @@ export async function listBusyIntervals(
 export async function insertBooking(
 	tx: Tx,
 	data: {
-		clientCpf: string;
+		clientId: string;
 		petId: string;
 		serviceId: string;
 		startsAt: Date;
@@ -103,10 +103,9 @@ export async function insertBooking(
 ) {
 	return tx.appointment.create({
 		data: {
-			client_cpf: data.clientCpf,
+			client_id: data.clientId,
 			pet_id: data.petId,
 			service_id: data.serviceId,
-			appointment_date: data.startsAt,
 			starts_at: data.startsAt,
 			ends_at: data.endsAt,
 			station: data.station,
@@ -118,17 +117,17 @@ export async function insertBooking(
 	});
 }
 
-export async function findClientBooking(id: number, cpf: string, tx: Tx = db) {
+export async function findClientBooking(id: number, clientId: string, tx: Tx = db) {
 	const row = await tx.appointment.findFirst({
-		where: { ...BOOKING, appointment_id: id, client_cpf: cpf },
+		where: { ...BOOKING, appointment_id: id, client_id: clientId },
 		select: bookingSelect,
 	});
 	return row && toBooking(row);
 }
 
-export async function listClientBookings(cpf: string): Promise<Booking[]> {
+export async function listClientBookings(clientId: string): Promise<Booking[]> {
 	const rows = await db.appointment.findMany({
-		where: { ...BOOKING, client_cpf: cpf },
+		where: { ...BOOKING, client_id: clientId },
 		orderBy: { starts_at: "desc" },
 		take: 100,
 		select: bookingSelect,
@@ -188,13 +187,13 @@ export async function listDayAgenda(filter: {
 export type AgendaEntry = Awaited<ReturnType<typeof listDayAgenda>>[number];
 
 export async function hasUpcomingBooking(
-	owner: { petId: string } | { clientCpf: string },
+	owner: { petId: string } | { clientId: string },
 	now: Date,
 ): Promise<boolean> {
 	const count = await db.appointment.count({
 		where: {
 			...BOOKING,
-			...("petId" in owner ? { pet_id: owner.petId } : { client_cpf: owner.clientCpf }),
+			...("petId" in owner ? { pet_id: owner.petId } : { client_id: owner.clientId }),
 			status: { in: ["SCHEDULED", "CONFIRMED", "IN_SERVICE"] },
 			ends_at: { gt: now },
 		},

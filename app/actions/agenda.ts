@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { isAppointmentStatus } from "@/lib/domain/appointment-status";
-import { mocksDomainBlocked } from "@/lib/server/mocks-guard";
+import { mocksDomainBlocked } from "@/lib/demo/guard";
 import { toActionError, type ActionResult } from "@/lib/server/action-result";
 import { requireAdmin } from "@/lib/server/current-user";
 import { changeBookingStatus } from "@/lib/use-cases/management/booking-status";

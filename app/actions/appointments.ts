@@ -3,9 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { isMocksEnabled } from "@/lib/config/mocks";
+import { isMocksEnabled } from "@/lib/demo/enabled";
 import { DomainError } from "@/lib/domain/errors";
-import { mocksDomainBlocked, mocksFormBlocked } from "@/lib/server/mocks-guard";
+import { mocksDomainBlocked, mocksFormBlocked } from "@/lib/demo/guard";
 import { toActionError, type ActionResult, type FormState } from "@/lib/server/action-result";
 import { requireClient } from "@/lib/server/current-user";
 import {
@@ -41,7 +41,7 @@ export async function createAppointmentAction(
 	const user = await requireClient();
 	try {
 		await createBooking({
-			cpf: user.cpf,
+			clientId: user.clientId,
 			petId: requiredUuid(formData, "pet_id", "o pet"),
 			serviceId: requiredUuid(formData, "service_id", "o serviço"),
 			startsAt: readStartsAt(formData),
@@ -62,7 +62,7 @@ export async function rescheduleAppointmentAction(
 	const user = await requireClient();
 	try {
 		await rescheduleBooking(
-			user.cpf,
+			user.clientId,
 			readAppointmentId(formData.get("appointment_id")),
 			readStartsAt(formData),
 			optionalText(formData, "notes", 500, "As observações"),
@@ -79,7 +79,7 @@ export async function cancelAppointmentAction(appointmentId: number): Promise<Ac
 	if (blocked) return blocked;
 	const user = await requireClient();
 	try {
-		await cancelBooking(user.cpf, readAppointmentId(appointmentId));
+		await cancelBooking(user.clientId, readAppointmentId(appointmentId));
 	} catch (error) {
 		return toActionError(error, "cancelAppointmentAction");
 	}

@@ -9,7 +9,7 @@ import type { Tx } from "@/lib/server/db";
 import { loadEligiblePair, toSchedule } from "./booking-context";
 
 export type SlotRequest = {
-	cpf: string;
+	clientId: string;
 	petId: string;
 	serviceId: string;
 	startsAt: Date;
@@ -22,7 +22,7 @@ export type SlotRequest = {
  */
 export async function reserveSlot(tx: Tx, request: SlotRequest, now: Date) {
 	const [{ service }, settings] = await Promise.all([
-		loadEligiblePair(request.cpf, request.petId, request.serviceId, tx),
+		loadEligiblePair(request.clientId, request.petId, request.serviceId, tx),
 		getShopSettings(tx),
 	]);
 	const endsAtGuess = addMinutes(request.startsAt, service.durationMinutes);
@@ -37,7 +37,7 @@ export async function reserveSlot(tx: Tx, request: SlotRequest, now: Date) {
 	});
 
 	return insertBooking(tx, {
-		clientCpf: request.cpf,
+		clientId: request.clientId,
 		petId: request.petId,
 		serviceId: service.id,
 		startsAt: request.startsAt,

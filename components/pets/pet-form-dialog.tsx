@@ -5,10 +5,10 @@ import { useActionState, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { savePetAction } from "@/app/actions/pets";
-import { isMocksPublic } from "@/lib/config/mocks-public";
+import { isMocksPublic } from "@/lib/demo/enabled-public";
 import { DomainError } from "@/lib/domain/errors";
 import { parseDateKey } from "@/lib/domain/time-zone";
-import { useMockDomainActions } from "@/lib/mock/client-actions";
+import { useMockDomainActions } from "@/lib/demo/client-actions";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -46,7 +46,7 @@ type Props = {
 	pet: EditablePet | null;
 	species: Option[];
 	breedsBySpecies: Record<string, Option[]>;
-	clientCpf?: string;
+	clientId?: string;
 };
 
 /** Mounted with a `key` per pet so field defaults reset when switching pets. */
@@ -87,8 +87,8 @@ function readPetForm(formData: FormData) {
 	};
 }
 
-export function PetFormDialog({ open, onOpenChange, pet, species, breedsBySpecies, clientCpf }: Props) {
-	const mocks = isMocksPublic() && Boolean(clientCpf);
+export function PetFormDialog({ open, onOpenChange, pet, species, breedsBySpecies, clientId }: Props) {
+	const mocks = isMocksPublic() && Boolean(clientId);
 	const mockActions = useMockDomainActions();
 	const [state, formAction, isPending] = useActionState(savePetAction, undefined);
 	const [mockPending, startMock] = useTransition();
@@ -98,12 +98,12 @@ export function PetFormDialog({ open, onOpenChange, pet, species, breedsBySpecie
 
 	function submitMock(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
-		if (!clientCpf) return;
+		if (!clientId) return;
 		const formData = new FormData(event.currentTarget);
 		startMock(() => {
 			try {
 				const { petId, input } = readPetForm(formData);
-				const result = mockActions.savePet(clientCpf, petId, input);
+				const result = mockActions.savePet(clientId, petId, input);
 				if (!result?.ok) throw new DomainError(result?.error ?? "Erro ao salvar.");
 				toast.success(result.message);
 				onOpenChange(false);

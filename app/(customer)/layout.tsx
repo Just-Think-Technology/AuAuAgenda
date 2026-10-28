@@ -1,5 +1,7 @@
+import { DemoAccountSeed } from "@/components/demo/account-seed";
 import { AppShell } from "@/components/layouts/app-shell";
 import type { NavItem } from "@/components/sidebar";
+import { isMocksEnabled } from "@/lib/demo/enabled";
 import { requireClient } from "@/lib/server/current-user";
 
 const NAV: NavItem[] = [
@@ -12,6 +14,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
 	const user = await requireClient();
 	return (
 		<AppShell user={user} items={NAV} settingsHref="/cliente/configuracoes">
+			{isMocksEnabled() ? <DemoAccountSeed cpf={user.clientId} /> : null}
 			{children}
 		</AppShell>
 	);

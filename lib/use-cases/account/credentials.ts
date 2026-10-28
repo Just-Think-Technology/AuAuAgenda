@@ -1,6 +1,6 @@
 import "server-only";
 
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 import {
 	findAdminCredentialsByEmail,

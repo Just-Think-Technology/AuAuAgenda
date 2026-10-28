@@ -5,10 +5,10 @@ import { useActionState, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { saveShopSettingsAction } from "@/app/actions/shop-settings";
-import { isMocksPublic } from "@/lib/config/mocks-public";
+import { isMocksPublic } from "@/lib/demo/enabled-public";
 import { DomainError } from "@/lib/domain/errors";
-import { useMockDomainActions } from "@/lib/mock/client-actions";
-import { parseShopSettingsForm } from "@/lib/mock/parse-forms";
+import { useMockDomainActions } from "@/lib/demo/client-actions";
+import { parseShopSettingsForm } from "@/lib/demo/parse-forms";
 import { PageHeader } from "@/components/layouts/page-header";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";

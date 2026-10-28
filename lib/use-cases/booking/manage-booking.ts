@@ -45,7 +45,7 @@ export async function rescheduleBooking(
 
 		return reserveSlot(
 			tx,
-			{ cpf, petId: booking.petId, serviceId: booking.serviceId, startsAt, notes: notes ?? booking.notes },
+			{ clientId: cpf, petId: booking.petId, serviceId: booking.serviceId, startsAt, notes: notes ?? booking.notes },
 			now,
 		);
 	});

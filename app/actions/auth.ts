@@ -2,10 +2,10 @@
 
 import { redirect } from "next/navigation";
 
-import { isMocksEnabled } from "@/lib/config/mocks";
+import { isMocksEnabled } from "@/lib/demo/enabled";
 import { bumpAdminSessionVersion, bumpClientSessionVersion, getClientSessionVersion } from "@/lib/dal/accounts";
 import { DomainError } from "@/lib/domain/errors";
-import { DEMO_ADMIN_IDENTITY } from "@/lib/mock/constants";
+import { DEMO_ADMIN_IDENTITY } from "@/lib/demo/constants";
 import { GENERIC_ERROR } from "@/lib/server/action-result";
 import { MANAGEMENT_HOME, MANAGEMENT_LOGIN } from "@/lib/server/current-user";
 import { clientIp, consumeRateLimit } from "@/lib/server/rate-limit";
@@ -19,21 +19,9 @@ import {
 } from "@/lib/server/session";
 import { authenticateAdmin } from "@/lib/use-cases/account/credentials";
 import { continueWithPhone } from "@/lib/use-cases/account/continue-with-phone";
-import { requestPasswordReset, resetPassword } from "@/lib/use-cases/account/password-reset";
-import { registerClient } from "@/lib/use-cases/account/register-client";
-import {
-	loginPassword,
-	newPassword,
-	optionalPhone,
-	optionalText,
-	rawPassword,
-	requiredEmail,
-	requiredPhone,
-	requiredText,
-} from "@/lib/validation/form";
+import { loginPassword, requiredEmail, requiredPhone } from "@/lib/validation/form";
 
 type AuthFormState = { error?: string } | undefined;
-type ResultFormState = { error?: string; success?: boolean } | undefined;
 
 const FIFTEEN_MINUTES = 15 * 60 * 1000;
 const TOO_MANY_ATTEMPTS = "Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.";
@@ -52,19 +40,16 @@ async function underLimit(scope: string, key: string, max: number): Promise<bool
 	);
 }
 
-/** Customer entry: the phone finds the account or creates it, then opens the session. */
 /** Demo only: refresh JWT after profile edits (no redirect). */
 export async function mockSyncClientSessionAction(input: {
-	cpf: string;
+	clientId: string;
 	name: string;
-	email?: string | null;
 	sessionVersion: number;
 }): Promise<{ error?: string }> {
 	if (!isMocksEnabled()) return { error: GENERIC_ERROR };
 	try {
-		await createClientSession(input.cpf, input.sessionVersion, {
+		await createClientSession(input.clientId, input.sessionVersion, {
 			name: input.name,
-			email: input.email ?? null,
 		});
 	} catch (error) {
 		return { error: errorMessage(error, "mockSyncClientSessionAction") };
@@ -74,16 +59,15 @@ export async function mockSyncClientSessionAction(input: {
 
 /** Demo only: session from client-side localStorage account (MOCKS=true). */
 export async function mockContinueWithPhoneAction(input: {
-	cpf: string;
+	clientId: string;
 	name: string;
 	sessionVersion: number;
 }): Promise<{ error?: string }> {
 	if (!isMocksEnabled()) return { error: GENERIC_ERROR };
 	try {
-		if (!(await underLimit("phone-login", input.cpf, 20))) return { error: TOO_MANY_ATTEMPTS };
-		await createClientSession(input.cpf, input.sessionVersion, {
+		if (!(await underLimit("phone-login", input.clientId, 20))) return { error: TOO_MANY_ATTEMPTS };
+		await createClientSession(input.clientId, input.sessionVersion, {
 			name: input.name,
-			email: null,
 		});
 	} catch (error) {
 		return { error: errorMessage(error, "mockContinueWithPhoneAction") };
@@ -91,9 +75,9 @@ export async function mockContinueWithPhoneAction(input: {
 	return {};
 }
 
-/** Demo only: admin session from server-side seed identity (MOCKS=true, never production). */
+/** Demo only: admin session from the server-side seed identity (MOCKS=true). */
 export async function mockAdminLoginAction(): Promise<{ error?: string }> {
-	if (!isMocksEnabled() || process.env.NODE_ENV === "production") return { error: GENERIC_ERROR };
+	if (!isMocksEnabled()) return { error: GENERIC_ERROR };
 	try {
 		if (!(await underLimit("admin-login", "demo-admin", 20))) return { error: TOO_MANY_ATTEMPTS };
 		await createAdminSession(DEMO_ADMIN_IDENTITY.adminId, DEMO_ADMIN_IDENTITY.sessionVersion, {
@@ -103,9 +87,10 @@ export async function mockAdminLoginAction(): Promise<{ error?: string }> {
 	} catch (error) {
 		return { error: errorMessage(error, "mockAdminLoginAction") };
 	}
-	redirect(MANAGEMENT_HOME);
+	return {};
 }
 
+/** Customer entry: the phone finds the account or creates it, then opens the session. */
 export async function continueWithPhoneAction(
 	_prev: AuthFormState,
 	formData: FormData,
@@ -116,10 +101,10 @@ export async function continueWithPhoneAction(
 	try {
 		const phone = requiredPhone(formData);
 		if (!(await underLimit("phone-login", phone, 5))) return { error: TOO_MANY_ATTEMPTS };
-		const { cpf } = await continueWithPhone(phone);
-		const sessionVersion = await getClientSessionVersion(cpf);
+		const { clientId } = await continueWithPhone(phone);
+		const sessionVersion = await getClientSessionVersion(clientId);
 		if (sessionVersion === null) throw new DomainError("Conta não encontrada.");
-		await createClientSession(cpf, sessionVersion);
+		await createClientSession(clientId, sessionVersion);
 	} catch (error) {
 		return { error: errorMessage(error, "continueWithPhoneAction") };
 	}
@@ -146,82 +131,9 @@ export async function loginAction(_prev: AuthFormState, formData: FormData): Pro
 	redirect(destination);
 }
 
-export async function signupAction(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
-	if (isMocksEnabled()) {
-		return { error: "Cadastro indisponível no modo demonstração." };
-	}
-	try {
-		if (formData.get("terms") !== "on") {
-			return { error: "Você precisa aceitar os termos de uso." };
-		}
-		const email = requiredEmail(formData);
-		if (!(await underLimit("signup", email, 10))) return { error: TOO_MANY_ATTEMPTS };
-
-		const password = rawPassword(formData);
-		if (password.length < 8 || password.length > 72) {
-			return { error: "A senha deve ter entre 8 e 72 caracteres." };
-		}
-
-		const { cpf } = await registerClient(
-			{
-				name: requiredText(formData, "name", "o nome", 255),
-				cpf: requiredText(formData, "cpf", "o CPF", 20),
-				email,
-				password,
-				birthDate: optionalText(formData, "birth_date", 30),
-				phone: optionalPhone(formData),
-			},
-			{ requireBirthDate: true },
-		);
-		const sessionVersion = await getClientSessionVersion(cpf);
-		if (sessionVersion === null) throw new DomainError("Conta não encontrada.");
-		await createClientSession(cpf, sessionVersion);
-	} catch (error) {
-		return { error: errorMessage(error, "signupAction") };
-	}
-	redirect("/cliente");
-}
-
-export async function forgotPasswordAction(
-	_prev: ResultFormState,
-	formData: FormData,
-): Promise<ResultFormState> {
-	if (isMocksEnabled()) {
-		return { error: "Recuperação de senha indisponível no modo demonstração." };
-	}
-	try {
-		const email = requiredEmail(formData);
-		if (!(await underLimit("forgot", email, 5))) return { error: TOO_MANY_ATTEMPTS };
-		await requestPasswordReset(email);
-		return { success: true };
-	} catch (error) {
-		if (error instanceof DomainError) return { error: error.message };
-		console.error("[forgotPasswordAction]", error instanceof Error ? error.message : "unknown");
-		return { error: "Não foi possível enviar o e-mail de recuperação. Tente novamente." };
-	}
-}
-
-export async function resetPasswordAction(
-	_prev: ResultFormState,
-	formData: FormData,
-): Promise<ResultFormState> {
-	if (isMocksEnabled()) {
-		return { error: "Recuperação de senha indisponível no modo demonstração." };
-	}
-	try {
-		const token = optionalText(formData, "token", 128);
-		if (!token) return { error: "Link de recuperação inválido ou ausente. Solicite um novo." };
-		if (!(await underLimit("reset", "", 5))) return { error: TOO_MANY_ATTEMPTS };
-		await resetPassword(token, newPassword(formData));
-		return { success: true };
-	} catch (error) {
-		return { error: errorMessage(error, "resetPasswordAction") };
-	}
-}
-
 export async function logoutAction(): Promise<void> {
 	const claims = await readClientSession();
-	if (claims && !isMocksEnabled()) await bumpClientSessionVersion(claims.cpf);
+	if (claims && !isMocksEnabled()) await bumpClientSessionVersion(claims.clientId);
 	await deleteClientSession();
 	redirect("/");
 }

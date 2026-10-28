@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { MockCustomerReschedule } from "@/components/mock/pages/customer-reschedule";
+import { MockCustomerReschedule } from "@/components/demo/pages/customer-reschedule";
 import { AvailableSlots } from "@/components/booking/available-slots";
-import { isMocksEnabled } from "@/lib/config/mocks";
+import { isMocksEnabled } from "@/lib/demo/enabled";
 import { DatePicker } from "@/components/booking/date-picker";
 import { StepSection } from "@/components/booking/step-section";
 import { AppointmentCard } from "@/components/customer/appointment-card";
@@ -33,7 +33,7 @@ export default async function RescheduleAppointmentPage({ params, searchParams }
 	if (isMocksEnabled()) return <MockCustomerReschedule user={user} appointmentId={appointmentId} />;
 
 	const [booking, settings] = await Promise.all([
-		findClientBooking(appointmentId, user.cpf),
+		findClientBooking(appointmentId, user.clientId),
 		getShopSettings(),
 	]);
 	if (!booking) notFound();

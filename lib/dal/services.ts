@@ -121,5 +121,5 @@ export async function softDeleteService(serviceId: string): Promise<boolean> {
 
 export async function countSpecies(ids: string[]): Promise<number> {
 	if (ids.length === 0) return 0;
-	return db.species.count({ where: { species_id: { in: ids } } });
+	return db.species.count({ where: { species_id: { in: ids }, deleted_at: null } });
 }

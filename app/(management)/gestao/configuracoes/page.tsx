@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
-import { MockManagementSettings } from "@/components/mock/pages/management-settings";
+import { MockManagementSettings } from "@/components/demo/pages/management-settings";
 import { ShopSettingsForm } from "@/components/management/shop-settings-form";
-import { isMocksEnabled } from "@/lib/config/mocks";
+import { isMocksEnabled } from "@/lib/demo/enabled";
 import { getShopSettings } from "@/lib/dal/shop";
 import { requireAdmin } from "@/lib/server/current-user";
 

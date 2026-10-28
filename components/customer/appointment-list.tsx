@@ -12,13 +12,13 @@ export function AppointmentList({
 	timeZone,
 	now,
 	withActions,
-	clientCpf,
+	clientId,
 }: {
 	appointments: AppointmentCardData[];
 	timeZone: string;
 	now: Date;
 	withActions: boolean;
-	clientCpf?: string;
+	clientId?: string;
 }) {
 	return (
 		<ul className="flex flex-col gap-3">
@@ -42,7 +42,7 @@ export function AppointmentList({
 										<CancelAppointmentButton
 											appointmentId={appointment.id}
 											summary={summary}
-											clientCpf={clientCpf}
+											clientId={clientId}
 										/>
 									</>
 								)

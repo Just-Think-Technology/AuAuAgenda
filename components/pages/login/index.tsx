@@ -9,11 +9,11 @@ import { toast } from "sonner";
 
 import { continueWithPhoneAction, mockContinueWithPhoneAction } from "@/app/actions/auth";
 import { AuthLayout } from "@/components/layouts/auth-layout";
-import { isMocksPublic } from "@/lib/config/mocks-public";
+import { isMocksPublic } from "@/lib/demo/enabled-public";
 import { maskPhoneInput } from "@/lib/format";
-import { persistMockStore } from "@/lib/mock/context";
-import { continueWithPhone } from "@/lib/mock/operations";
-import { ensureSeed } from "@/lib/mock/storage";
+import { persistMockStore } from "@/lib/demo/context";
+import { continueWithPhone } from "@/lib/demo/operations";
+import { ensureSeed } from "@/lib/demo/storage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,7 +38,7 @@ export function Login() {
 				const result = continueWithPhone(store, phone);
 				persistMockStore(result.store);
 				const response = await mockContinueWithPhoneAction({
-					cpf: result.cpf,
+					clientId: result.clientId,
 					name: result.name,
 					sessionVersion: result.sessionVersion,
 				});
@@ -80,6 +80,12 @@ export function Login() {
 				<Button type="submit" disabled={pending || phoneDigits.length < 10}>
 					{pending ? "Entrando..." : "Continuar"}
 				</Button>
+
+				{mocks && (
+					<p className="text-center text-sm text-foreground/70">
+						Na demonstração, qualquer telefone entra com pets e horários de exemplo.
+					</p>
+				)}
 
 				<div className="flex items-center justify-center">
 					<Link

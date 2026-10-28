@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { MockManagementAgenda } from "@/components/mock/pages/management-agenda";
+import { MockManagementAgenda } from "@/components/demo/pages/management-agenda";
 import { EmptyState, PageHeader } from "@/components/layouts/page-header";
-import { isMocksEnabled } from "@/lib/config/mocks";
+import { isMocksEnabled } from "@/lib/demo/enabled";
 import { AgendaEntryCard } from "@/components/management/agenda-entry-card";
 import { AgendaFilters, agendaHref, type AgendaQuery } from "@/components/management/agenda-filters";
 import { Button } from "@/components/ui/button";

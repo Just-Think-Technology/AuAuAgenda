@@ -1,9 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { isPhoneAccountId } from "./account-id.ts";
-import { newPhoneAccountId } from "./phone-account-id.ts";
-import { isValidCpf } from "./cpf.ts";
 import { normalizePhone } from "./phone.ts";
 
 describe("normalizePhone", () => {
@@ -23,14 +20,5 @@ describe("normalizePhone", () => {
 		assert.equal(normalizePhone("123"), null);
 		assert.equal(normalizePhone("55119123456789"), null);
 		assert.equal(normalizePhone("0011912345678"), null);
-	});
-});
-
-describe("phone account id", () => {
-	it("fits the cpf column and is not a CPF", () => {
-		const id = newPhoneAccountId();
-		assert.equal(id.length, 15);
-		assert.equal(isPhoneAccountId(id), true);
-		assert.equal(isValidCpf(id), false);
 	});
 });

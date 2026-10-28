@@ -1,10 +1,9 @@
-import { NextResponse, type NextRequest } from "next/server";
-
 import { getCurrentUser, homeFor } from "@/lib/server/current-user";
+import { redirectToPath } from "@/lib/server/redirect";
 
 /** Sends a signed-in user to the area of their role. */
-export async function GET(req: NextRequest) {
+export async function GET() {
 	const user = await getCurrentUser();
 	const target = user ? homeFor(user) : "/session/expired";
-	return NextResponse.redirect(new URL(target, req.nextUrl));
+	return redirectToPath(target);
 }

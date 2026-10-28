@@ -3,9 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { isMocksEnabled } from "@/lib/config/mocks";
+import { isMocksEnabled } from "@/lib/demo/enabled";
 import { PET_SIZES } from "@/lib/domain/pet-size";
-import { mocksDomainBlocked, mocksFormBlocked } from "@/lib/server/mocks-guard";
+import { mocksDomainBlocked, mocksFormBlocked } from "@/lib/demo/guard";
 import { toActionError, type ActionResult, type FormState } from "@/lib/server/action-result";
 import { requireAdmin } from "@/lib/server/current-user";
 import { removeService, saveService, SERVICE_DURATION } from "@/lib/use-cases/management/services";

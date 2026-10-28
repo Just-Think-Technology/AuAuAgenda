@@ -16,9 +16,9 @@ export function AuthLayout({ title, description, children }: AuthLayoutProps) {
 					<Image
 						src={logo}
 						alt="logo"
-						width={100}
-						height={100}
-						className="w-14 mb-4"
+						width={140}
+						height={140}
+						className="mb-4"
 					/>
 					<h1 className="text-4xl font-semibold tracking-tight text-black">
 						{title}

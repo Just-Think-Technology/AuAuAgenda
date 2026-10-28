@@ -6,7 +6,7 @@ import "@/styles/globals.css";
 import { ViewTransitions } from "next-view-transitions";
 import { Toaster } from "sonner";
 
-import { MockModeRoot } from "@/components/mock/mock-mode-root";
+import { MockModeRoot } from "@/components/demo/mock-mode-root";
 import { cn } from "@/lib/utils";
 
 const sans = Inter({

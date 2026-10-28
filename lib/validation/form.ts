@@ -1,4 +1,3 @@
-import { isValidCpf, normalizeCpf } from "@/lib/domain/cpf";
 import { DomainError } from "@/lib/domain/errors";
 import { assertLoginPassword } from "@/lib/domain/login-password";
 import { normalizePhone } from "@/lib/domain/phone";
@@ -10,8 +9,6 @@ import { normalizePhone } from "@/lib/domain/phone";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-export const MIN_PASSWORD_LENGTH = 8;
 
 function raw(form: FormData, key: string): string {
 	const value = form.get(key);
@@ -100,37 +97,6 @@ export function requiredEmail(form: FormData, key = "email"): string {
 	return value;
 }
 
-export function optionalEmail(form: FormData, key = "email"): string | null {
-	const value = raw(form, key).trim().toLowerCase();
-	if (!value) return null;
-	if (value.length > 255 || !EMAIL_PATTERN.test(value)) throw new DomainError("E-mail inválido.");
-	return value;
-}
-
-/** Empty means the tutor has not informed a CPF yet. A filled value must be valid. */
-export function optionalCpf(form: FormData, key = "cpf"): string | null {
-	const value = raw(form, key).trim();
-	if (!value) return null;
-	const cpf = normalizeCpf(value);
-	if (!isValidCpf(cpf)) throw new DomainError("CPF inválido.");
-	return cpf;
-}
-
-export function newPassword(form: FormData, key = "password", confirmKey = "password_confirm"): string {
-	const password = raw(form, key);
-	const confirmation = raw(form, confirmKey);
-	if (!password || !confirmation) throw new DomainError("Preencha a nova senha e a confirmação.");
-	if (password !== confirmation) throw new DomainError("As senhas não coincidem.");
-	if (password.length < MIN_PASSWORD_LENGTH || password.length > 72) {
-		throw new DomainError(`A senha deve ter entre ${MIN_PASSWORD_LENGTH} e 72 caracteres.`);
-	}
-	return password;
-}
-
-export function rawPassword(form: FormData, key = "password"): string {
-	return raw(form, key);
-}
-
 /** Existing management password. Caps at 72 bytes (bcrypt) without a minimum, so legacy hashes still work. */
 export function loginPassword(form: FormData, key = "password"): string {
 	return assertLoginPassword(raw(form, key));
@@ -140,12 +106,6 @@ export function requiredPhone(form: FormData, key = "phone"): string {
 	const phone = normalizePhone(raw(form, key));
 	if (!phone) throw new DomainError("Telefone inválido.");
 	return phone;
-}
-
-export function optionalPhone(form: FormData, key = "phone"): string | null {
-	const value = raw(form, key).trim();
-	if (!value) return null;
-	return requiredPhone(form, key);
 }
 
 /** Parses `49,90`, `49.90` or `R$ 49,90` into cents. Empty input means no price. */

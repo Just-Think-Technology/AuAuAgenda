@@ -3,7 +3,7 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 
-import { isMocksEnabled } from "@/lib/config/mocks";
+import { isMocksEnabled } from "@/lib/demo/enabled";
 import { findActiveAdminIdentity, findActiveClientIdentity } from "@/lib/dal/accounts";
 import { PHONE_ACCOUNT_NAME } from "@/lib/domain/account-id";
 import { readAdminSession, readClientSession } from "@/lib/server/session";
@@ -24,14 +24,13 @@ export const getCurrentUser = cache(async (): Promise<Extract<AuthUser, { role: 
 	if (isMocksEnabled()) {
 		return {
 			role: "client",
-			cpf: claims.cpf,
+			clientId: claims.clientId,
 			name: claims.name ?? PHONE_ACCOUNT_NAME,
-			email: claims.email ?? null,
 		};
 	}
-	const client = await findActiveClientIdentity(claims.cpf);
+	const client = await findActiveClientIdentity(claims.clientId);
 	if (!client || client.session_version !== claims.sv) return null;
-	return { role: "client", cpf: client.cpf, name: client.name, email: client.email };
+	return { role: "client", clientId: client.client_id, name: client.name };
 });
 
 /** Admin re-checked against the database once per request. Ignores the customer cookie. */

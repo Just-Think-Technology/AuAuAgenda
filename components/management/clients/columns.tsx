@@ -11,31 +11,16 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { listClientsWithPets } from "@/lib/dal/accounts";
-import { formatCpf, isValidCpf } from "@/lib/domain/cpf";
 import { formatPhone } from "@/lib/format";
 
 export type ManagedClient = Awaited<ReturnType<typeof listClientsWithPets>>[number];
 
-export function buildColumns({ onDelete }: { onDelete: (cpf: string) => void }): ColumnDef<ManagedClient>[] {
+export function buildColumns({ onDelete }: { onDelete: (clientId: string) => void }): ColumnDef<ManagedClient>[] {
 	return [
 		{
 			accessorKey: "name",
 			header: "Nome",
 			cell: ({ row }) => <span className="font-medium text-foreground">{row.original.name}</span>,
-		},
-		{
-			accessorKey: "cpf",
-			header: "CPF",
-			cell: ({ row }) => (
-				<span className="whitespace-nowrap text-muted-foreground tabular-nums">
-					{isValidCpf(row.original.cpf) ? formatCpf(row.original.cpf) : "—"}
-				</span>
-			),
-		},
-		{
-			accessorKey: "email",
-			header: "E-mail",
-			cell: ({ row }) => <span className="text-muted-foreground">{row.original.email ?? "—"}</span>,
 		},
 		{
 			accessorKey: "phone",
@@ -72,7 +57,7 @@ export function buildColumns({ onDelete }: { onDelete: (cpf: string) => void }):
 						<DropdownMenuContent align="end" className="w-40">
 							<DropdownMenuItem
 								className="!text-destructive focus:bg-destructive/10"
-								onClick={() => onDelete(row.original.cpf)}
+								onClick={() => onDelete(row.original.client_id)}
 							>
 								<Trash2Icon className="text-inherit" />
 								Remover

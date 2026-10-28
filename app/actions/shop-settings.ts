@@ -2,9 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 
-import { isMocksEnabled } from "@/lib/config/mocks";
+import { isMocksEnabled } from "@/lib/demo/enabled";
 import type { OpeningDay } from "@/lib/domain/availability";
-import { mocksFormBlocked } from "@/lib/server/mocks-guard";
+import { mocksFormBlocked } from "@/lib/demo/guard";
 import { DomainError } from "@/lib/domain/errors";
 import { parseTimeOfDay } from "@/lib/domain/time-zone";
 import { toActionError, type FormState } from "@/lib/server/action-result";

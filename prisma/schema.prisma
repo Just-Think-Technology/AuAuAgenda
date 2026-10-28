@@ -16,40 +16,32 @@ model admin {
   created_at      DateTime      @default(now()) @db.Timestamptz(6)
   updated_at      DateTime      @default(now()) @db.Timestamptz(6)
   deleted_at      DateTime?     @db.Timestamptz(6)
-  appointment appointment[]
-  doctor      doctor[]
-  recipe      recipe[]
-  specialty   specialty[]
+  appointment     appointment[]
 }
 
 model appointment {
   appointment_id    Int                 @id @default(autoincrement())
   pet_id            String?             @db.Uuid
-  appointment_date  DateTime            @db.Timestamp(6)
-  doctor_id         String?             @db.Uuid
-  specialty_id      String?             @db.Uuid
-  admin_id          String?             @db.Uuid
   created_at        DateTime            @default(now()) @db.Timestamptz(6)
   updated_at        DateTime            @default(now()) @db.Timestamptz(6)
   deleted_at        DateTime?           @db.Timestamptz(6)
   /// Pet shop booking fields. Legacy clinic rows keep these null and stay out of the new agenda.
   service_id        String?             @db.Uuid
-  client_cpf        String?             @db.VarChar(15)
+  client_id         String?             @db.Uuid
   starts_at         DateTime?           @db.Timestamptz(6)
   ends_at           DateTime?           @db.Timestamptz(6)
   station           Int?
   status            appointment_status?
   notes             String?
   status_updated_at DateTime?           @db.Timestamptz(6)
+  admin_id          String?             @db.Uuid
   admin             admin?              @relation(fields: [admin_id], references: [admin_id], onUpdate: NoAction)
-  doctor            doctor?             @relation(fields: [doctor_id], references: [doctor_id], onDelete: Cascade, onUpdate: NoAction)
   pet               pet?                @relation(fields: [pet_id], references: [pet_id], onDelete: Cascade, onUpdate: NoAction)
-  specialty         specialty?          @relation(fields: [specialty_id], references: [specialty_id], onDelete: Cascade, onUpdate: NoAction)
   service           service?            @relation(fields: [service_id], references: [service_id], onDelete: Restrict, onUpdate: NoAction)
-  client            client?             @relation(fields: [client_cpf], references: [cpf], onDelete: Restrict, onUpdate: NoAction)
+  client            client?             @relation(fields: [client_id], references: [client_id], onDelete: Restrict, onUpdate: NoAction)
 
   @@index([starts_at])
-  @@index([client_cpf, starts_at])
+  @@index([client_id, starts_at])
 }
 
 model breed {
@@ -65,23 +57,17 @@ model breed {
 }
 
 model client {
-  cpf                  String                 @id @db.VarChar(15)
-  name                 String                 @db.VarChar(255)
-  /// Null for accounts opened with a phone number only.
-  birth_date           DateTime?              @db.Date
-  email                String?                @unique @db.VarChar(255)
-  password             String?                @db.VarChar(255)
-  session_version      Int                    @default(0)
-  created_at           DateTime               @default(now()) @db.Timestamptz(6)
-  updated_at           DateTime               @default(now()) @db.Timestamptz(6)
-  deleted_at           DateTime?              @db.Timestamptz(6)
+  client_id       String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String        @db.VarChar(255)
+  session_version Int           @default(0)
+  created_at      DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime      @default(now()) @db.Timestamptz(6)
+  deleted_at      DateTime?     @db.Timestamptz(6)
   /// National digits (area code + number). Active accounts cannot share a phone;
   /// partial unique index `client_phone_active_key` lives in SQL (Prisma cannot express the filter).
-  phone                String?                @db.VarChar(20)
-  password_reset_token password_reset_token[]
-  pet                  pet[]
-  recipe               recipe[]
-  appointment          appointment[]
+  phone           String        @db.VarChar(20)
+  pet             pet[]
+  appointment     appointment[]
 }
 
 /// Shared rate-limit counters across app instances.
@@ -93,103 +79,24 @@ model auth_rate_limit {
   @@index([reset_at])
 }
 
-model password_reset_token {
-  reset_token_id String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  client_cpf     String    @db.VarChar(15)
-  token_hash     String    @unique @db.VarChar(64)
-  expires_at     DateTime  @db.Timestamptz(6)
-  used_at        DateTime? @db.Timestamptz(6)
-  created_at     DateTime  @default(now()) @db.Timestamptz(6)
-  client         client    @relation(fields: [client_cpf], references: [cpf], onDelete: Cascade, onUpdate: NoAction)
-
-  @@index([client_cpf])
-  @@index([expires_at])
-}
-
-model doctor {
-  doctor_id    String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name         String        @db.VarChar(255)
-  cpf          String        @unique @db.VarChar(15)
-  specialty_id String?       @db.Uuid
-  admin_id     String?       @db.Uuid
-  created_at   DateTime      @default(now()) @db.Timestamptz(6)
-  updated_at   DateTime      @default(now()) @db.Timestamptz(6)
-  deleted_at   DateTime?     @db.Timestamptz(6)
-  appointment  appointment[]
-  admin        admin?        @relation(fields: [admin_id], references: [admin_id], onUpdate: NoAction)
-  specialty    specialty?    @relation(fields: [specialty_id], references: [specialty_id], onUpdate: NoAction)
-  recipe       recipe[]
-}
-
 model pet {
-  pet_id        String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name          String        @db.VarChar(255)
-  birth_date    DateTime?     @db.Date
-  client_cpf    String?       @db.VarChar(15)
-  breed_id      String?       @db.Uuid
-  created_at    DateTime      @default(now()) @db.Timestamptz(6)
-  updated_at    DateTime      @default(now()) @db.Timestamptz(6)
-  deleted_at    DateTime?     @db.Timestamptz(6)
-  is_neutered   Boolean?      @default(false)
-  is_vaccinated Boolean?      @default(false)
-  image_url     String?
-  sex           String?       @db.VarChar(50)
-  species_id    String?       @db.Uuid
-  size          pet_size?
-  notes         String?
-  appointment   appointment[]
-  breed         breed?        @relation(fields: [breed_id], references: [breed_id], onDelete: Cascade, onUpdate: NoAction)
-  client        client?       @relation(fields: [client_cpf], references: [cpf], onDelete: Cascade, onUpdate: NoAction)
-  species       species?      @relation(fields: [species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction)
-  pet_vaccine   pet_vaccine[]
-  recipe        recipe[]
-}
-
-model recipe {
-  recipe_id   Int       @id @default(autoincrement())
-  description String
-  pet_id      String?   @db.Uuid
-  client_cpf  String?   @db.VarChar(15)
-  admin_id    String?   @db.Uuid
-  created_at  DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at  DateTime  @default(now()) @db.Timestamptz(6)
-  deleted_at  DateTime? @db.Timestamptz(6)
-  pdf_url     String?
-  doctor_id   String?   @db.Uuid
-  admin       admin?    @relation(fields: [admin_id], references: [admin_id], onUpdate: NoAction)
-  client      client?   @relation(fields: [client_cpf], references: [cpf], onDelete: Cascade, onUpdate: NoAction)
-  doctor      doctor?   @relation(fields: [doctor_id], references: [doctor_id], onUpdate: NoAction)
-  pet         pet?      @relation(fields: [pet_id], references: [pet_id], onDelete: Cascade, onUpdate: NoAction)
-}
-
-model specialty {
-  specialty_id String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name         String        @unique @db.VarChar(100)
-  description  String?
-  admin_id     String?       @db.Uuid
-  created_at   DateTime      @default(now()) @db.Timestamptz(6)
-  updated_at   DateTime      @default(now()) @db.Timestamptz(6)
-  deleted_at   DateTime?     @db.Timestamptz(6)
-  appointment  appointment[]
-  doctor       doctor[]
-  admin        admin?        @relation(fields: [admin_id], references: [admin_id], onUpdate: NoAction)
-}
-
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model pet_vaccine {
-  pet_id     String  @db.Uuid
-  vaccine_id String  @db.Uuid
-  pet        pet     @relation(fields: [pet_id], references: [pet_id], onDelete: Cascade, onUpdate: NoAction)
-  vaccine    vaccine @relation(fields: [vaccine_id], references: [vaccine_id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@id([pet_id, vaccine_id])
-}
-
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model vaccine {
-  vaccine_id  String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String        @unique @db.VarChar(100)
-  pet_vaccine pet_vaccine[]
+  pet_id      String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String        @db.VarChar(255)
+  birth_date  DateTime?     @db.Date
+  client_id   String?       @db.Uuid
+  breed_id    String?       @db.Uuid
+  created_at  DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime      @default(now()) @db.Timestamptz(6)
+  deleted_at  DateTime?     @db.Timestamptz(6)
+  image_url   String?
+  sex         String?       @db.VarChar(50)
+  species_id  String?       @db.Uuid
+  size        pet_size?
+  notes       String?
+  appointment appointment[]
+  breed       breed?        @relation(fields: [breed_id], references: [breed_id], onDelete: Cascade, onUpdate: NoAction)
+  client      client?       @relation(fields: [client_id], references: [client_id], onDelete: Cascade, onUpdate: NoAction)
+  species     species?      @relation(fields: [species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -197,6 +104,8 @@ model species {
   species_id      String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name            String            @unique
   created_at      DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime          @default(now()) @db.Timestamptz(6)
+  deleted_at      DateTime?         @db.Timestamptz(6)
   breed           breed[]
   pet             pet[]
   service_species service_species[]
@@ -250,13 +159,16 @@ model shop_settings {
   time_zone             String   @default("America/Sao_Paulo") @db.VarChar(64)
   capacity              Int      @default(1)
   slot_interval_minutes Int      @default(30)
+  created_at            DateTime @default(now()) @db.Timestamptz(6)
   updated_at            DateTime @default(now()) @db.Timestamptz(6)
 }
 
 /// Minutes since local midnight in the shop time zone. Closed days keep both minutes null.
 model opening_hours {
-  weekday      Int     @id
-  is_closed    Boolean @default(false)
+  weekday      Int      @id
+  is_closed    Boolean  @default(false)
   open_minute  Int?
   close_minute Int?
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime @default(now()) @db.Timestamptz(6)
 }

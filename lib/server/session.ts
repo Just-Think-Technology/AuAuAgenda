@@ -11,7 +11,7 @@ export const ADMIN_COOKIE = "pet-connect:admin";
 const CLIENT_TTL_SECONDS = 60 * 60 * 24 * 7;
 const ADMIN_TTL_SECONDS = 60 * 60 * 24;
 
-export type ClientClaims = { role: "client"; cpf: string; sv: number; name?: string; email?: string | null };
+export type ClientClaims = { role: "client"; clientId: string; sv: number; name?: string };
 export type AdminClaims = { role: "admin"; admin_id: string; sv: number; name?: string; email?: string };
 
 function secret(): string {
@@ -47,16 +47,16 @@ function sessionVersion(payload: jwt.JwtPayload): number | null {
 }
 
 export async function createClientSession(
-	cpf: string,
+	clientId: string,
 	sessionVersion: number,
-	profile?: { name: string; email?: string | null },
+	profile?: { name: string },
 ): Promise<void> {
 	const token = jwt.sign(
 		{
 			role: "client",
-			cpf,
+			clientId,
 			sv: sessionVersion,
-			...(profile && { name: profile.name, email: profile.email ?? null }),
+			...(profile && { name: profile.name }),
 		} satisfies ClientClaims,
 		secret(),
 		{ expiresIn: CLIENT_TTL_SECONDS, algorithm: "HS256" },
@@ -99,15 +99,12 @@ export async function readClientSession(): Promise<ClientClaims | null> {
 	const cookieStore = await cookies();
 	return readVerified(cookieStore.get(CLIENT_COOKIE)?.value, (payload) => {
 		const sv = sessionVersion(payload);
-		if (payload.role === "client" && typeof payload.cpf === "string" && sv !== null) {
+		if (payload.role === "client" && typeof payload.clientId === "string" && sv !== null) {
 			return {
 				role: "client",
-				cpf: payload.cpf,
+				clientId: payload.clientId,
 				sv,
 				...(typeof payload.name === "string" && { name: payload.name }),
-				...(payload.email === null || typeof payload.email === "string"
-					? { email: payload.email as string | null }
-					: {}),
 			};
 		}
 		return null;

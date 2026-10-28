@@ -5,8 +5,8 @@ import { PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { toast } from "sonner";
 
 import { deletePetAction } from "@/app/actions/pets";
-import { isMocksPublic } from "@/lib/config/mocks-public";
-import { useMockDomainActions } from "@/lib/mock/client-actions";
+import { isMocksPublic } from "@/lib/demo/enabled-public";
+import { useMockDomainActions } from "@/lib/demo/client-actions";
 import { EmptyState, PageHeader } from "@/components/layouts/page-header";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,14 +29,14 @@ export function PetsView({
 	pets,
 	species,
 	breedsBySpecies,
-	clientCpf,
+	clientId,
 }: {
 	pets: PetViewItem[];
 	species: Option[];
 	breedsBySpecies: Record<string, Option[]>;
-	clientCpf?: string;
+	clientId?: string;
 }) {
-	const mocks = isMocksPublic() && Boolean(clientCpf);
+	const mocks = isMocksPublic() && Boolean(clientId);
 	const mockActions = useMockDomainActions();
 	const [form, setForm] = useState<FormTarget | null>(null);
 	const [toDelete, setToDelete] = useState<PetViewItem | null>(null);
@@ -54,8 +54,8 @@ export function PetsView({
 		if (!toDelete) return;
 		startDelete(async () => {
 			const result =
-				mocks && clientCpf
-					? mockActions.deletePet(clientCpf, toDelete.pet_id)
+				mocks && clientId
+					? mockActions.deletePet(clientId, toDelete.pet_id)
 					: await deletePetAction(toDelete.pet_id);
 			if (result.ok) {
 				toast.success(result.message);
@@ -113,7 +113,7 @@ export function PetsView({
 					pet={form.pet}
 					species={species}
 					breedsBySpecies={breedsBySpecies}
-					clientCpf={clientCpf}
+					clientId={clientId}
 				/>
 			)}
 

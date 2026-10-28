@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { MockManagementServiceForm } from "@/components/mock/pages/management-service-form";
+import { MockManagementServiceForm } from "@/components/demo/pages/management-service-form";
 import { PageHeader } from "@/components/layouts/page-header";
-import { isMocksEnabled } from "@/lib/config/mocks";
+import { isMocksEnabled } from "@/lib/demo/enabled";
 import { ServiceForm } from "@/components/management/service-form";
 import { listSpecies } from "@/lib/dal/pets";
 import { findService } from "@/lib/dal/services";

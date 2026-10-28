@@ -2,9 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 
-import { isMocksEnabled } from "@/lib/config/mocks";
+import { isMocksEnabled } from "@/lib/demo/enabled";
 import { DomainError } from "@/lib/domain/errors";
-import { mocksDomainBlocked, mocksFormBlocked } from "@/lib/server/mocks-guard";
+import { mocksDomainBlocked, mocksFormBlocked } from "@/lib/demo/guard";
 import { PET_SIZES } from "@/lib/domain/pet-size";
 import { parseDateKey } from "@/lib/domain/time-zone";
 import { toActionError, type ActionResult, type FormState } from "@/lib/server/action-result";
@@ -38,7 +38,7 @@ export async function savePetAction(_prev: FormState, formData: FormData): Promi
 	if (isMocksEnabled()) return mocksFormBlocked() ?? { ok: false, error: "" };
 	const user = await requireClient();
 	try {
-		await savePet(user.cpf, optionalUuid(formData, "pet_id"), {
+		await savePet(user.clientId, optionalUuid(formData, "pet_id"), {
 			name: requiredText(formData, "name", "o nome do pet", 100),
 			speciesId: requiredUuid(formData, "species_id", "a espécie"),
 			breedId: optionalUuid(formData, "breed_id"),
@@ -60,7 +60,7 @@ export async function deletePetAction(petId: string): Promise<ActionResult> {
 	const user = await requireClient();
 	if (!isUuid(petId)) return { ok: false, error: "Pet inválido." };
 	try {
-		await deletePet(user.cpf, petId);
+		await deletePet(user.clientId, petId);
 	} catch (error) {
 		return toActionError(error, "deletePetAction");
 	}

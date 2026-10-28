@@ -1,4 +1,4 @@
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 /** Compared when no account matches so response time does not reveal which e-mails exist. */
 const DUMMY_HASH = "$2b$10$1RBzoalrvk.VwHlndExZiurqPcvXG0NpsjfgRDftoVTPgMYc37S4i";

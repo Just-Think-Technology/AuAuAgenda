@@ -1,6 +1,6 @@
 import "server-only";
 
-import { isMocksEnabled } from "@/lib/config/mocks";
+import { isMocksEnabled } from "@/lib/demo/enabled";
 import { db } from "@/lib/server/db";
 
 const memoryBuckets = new Map<string, { count: number; resetAt: number }>();

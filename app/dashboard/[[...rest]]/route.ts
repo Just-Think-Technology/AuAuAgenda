@@ -1,6 +1,6 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { redirectToPath } from "@/lib/server/redirect";
 
 /** Old clinic links and bookmarks land on the right area for the signed-in role. */
-export function GET(request: NextRequest) {
-	return NextResponse.redirect(new URL("/session", request.nextUrl));
+export function GET() {
+	return redirectToPath("/session");
 }

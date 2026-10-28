@@ -10,6 +10,11 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
 	turbopack: { root: __dirname },
+	experimental: {
+		// Run PostCSS in a worker thread so the publish build does not
+		// depend on a loopback connection from a child process.
+		turbopackPluginRuntimeStrategy: "workerThreads",
+	},
 	env: {
 		NEXT_PUBLIC_MOCKS: process.env.MOCKS === "true" ? "true" : "false",
 	},

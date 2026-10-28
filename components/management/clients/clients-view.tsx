@@ -4,8 +4,8 @@ import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { deleteClientAction } from "@/app/actions/admin-clients";
-import { isMocksPublic } from "@/lib/config/mocks-public";
-import { useMockDomainActions } from "@/lib/mock/client-actions";
+import { isMocksPublic } from "@/lib/demo/enabled-public";
+import { useMockDomainActions } from "@/lib/demo/client-actions";
 import { PetCard } from "@/components/pets/pet-card";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +17,6 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { formatCpf, isValidCpf } from "@/lib/domain/cpf";
 import { formatPhone } from "@/lib/format";
 
 import { buildColumns, type ManagedClient } from "./columns";
@@ -26,23 +25,23 @@ import { DataTable } from "./data-table";
 export function ClientsView({ clients }: { clients: ManagedClient[] }) {
 	const mocks = isMocksPublic();
 	const mockActions = useMockDomainActions();
-	const [activeCpf, setActiveCpf] = useState<string | null>(null);
-	const [cpfToDelete, setCpfToDelete] = useState<string | null>(null);
+	const [activeId, setActiveId] = useState<string | null>(null);
+	const [idToDelete, setIdToDelete] = useState<string | null>(null);
 	const [isDeleting, startDelete] = useTransition();
-	const columns = useMemo(() => buildColumns({ onDelete: setCpfToDelete }), []);
-	const active = clients.find((c) => c.cpf === activeCpf) ?? null;
-	const toDelete = clients.find((c) => c.cpf === cpfToDelete) ?? null;
+	const columns = useMemo(() => buildColumns({ onDelete: setIdToDelete }), []);
+	const active = clients.find((c) => c.client_id === activeId) ?? null;
+	const toDelete = clients.find((c) => c.client_id === idToDelete) ?? null;
 
 	function confirmDelete() {
-		if (!cpfToDelete) return;
+		if (!idToDelete) return;
 		startDelete(async () => {
 			const result = mocks
-				? mockActions.removeClient(cpfToDelete)
-				: await deleteClientAction(cpfToDelete);
+				? mockActions.removeClient(idToDelete)
+				: await deleteClientAction(idToDelete);
 			if (result.ok) {
 				toast.success(result.message);
-				if (activeCpf === cpfToDelete) setActiveCpf(null);
-				setCpfToDelete(null);
+				if (activeId === idToDelete) setActiveId(null);
+				setIdToDelete(null);
 			} else {
 				toast.error(result.error);
 			}
@@ -54,25 +53,17 @@ export function ClientsView({ clients }: { clients: ManagedClient[] }) {
 			<DataTable
 				columns={columns}
 				data={clients}
-				onRowClick={(row) => setActiveCpf(row.cpf)}
-				isRowActive={(row) => row.cpf === activeCpf}
+				onRowClick={(row) => setActiveId(row.client_id)}
+				isRowActive={(row) => row.client_id === activeId}
 			/>
 
-			<Sheet open={Boolean(active)} onOpenChange={(open) => !open && setActiveCpf(null)}>
+			<Sheet open={Boolean(active)} onOpenChange={(open) => !open && setActiveId(null)}>
 				<SheetContent className="w-full overflow-y-auto sm:max-w-md">
 					{active && (
 						<>
 							<SheetHeader>
 								<SheetTitle>{active.name}</SheetTitle>
-								<SheetDescription>
-									{[
-										active.email,
-										isValidCpf(active.cpf) ? formatCpf(active.cpf) : null,
-										formatPhone(active.phone),
-									]
-										.filter((part) => part && part !== "—")
-										.join(" · ") || "Sem contato informado"}
-								</SheetDescription>
+								<SheetDescription>{formatPhone(active.phone)}</SheetDescription>
 							</SheetHeader>
 							<div className="flex flex-col gap-3 px-4 pb-6">
 								<h3 className="font-semibold">Pets ({active.pet.length})</h3>
@@ -87,7 +78,7 @@ export function ClientsView({ clients }: { clients: ManagedClient[] }) {
 				</SheetContent>
 			</Sheet>
 
-			<Dialog open={Boolean(cpfToDelete)} onOpenChange={(open) => !open && !isDeleting && setCpfToDelete(null)}>
+			<Dialog open={Boolean(idToDelete)} onOpenChange={(open) => !open && !isDeleting && setIdToDelete(null)}>
 				<DialogContent className="sm:max-w-md">
 					<DialogHeader className="gap-2">
 						<DialogTitle>Remover {toDelete?.name}?</DialogTitle>
@@ -96,7 +87,7 @@ export function ClientsView({ clients }: { clients: ManagedClient[] }) {
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter>
-						<Button variant="outline" onClick={() => setCpfToDelete(null)} disabled={isDeleting}>
+						<Button variant="outline" onClick={() => setIdToDelete(null)} disabled={isDeleting}>
 							Voltar
 						</Button>
 						<Button variant="destructive" onClick={confirmDelete} disabled={isDeleting}>

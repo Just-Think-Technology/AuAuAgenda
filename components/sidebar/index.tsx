@@ -71,7 +71,7 @@ function SidebarContent({
 	return (
 		<div className="flex flex-col flex-1 min-h-screen md:min-h-0 md:h-full justify-between bg-white">
 			<header className="p-4">
-				<Image src={logo} alt="AuAu Agenda" width={42} />
+				<Image src={logo} alt="AuAu Agenda" width={140} />
 			</header>
 
 			<nav aria-label="Navegação principal" className="px-3 flex-grow mt-30">

@@ -2,7 +2,7 @@ import "server-only";
 
 import { PrismaPg } from "@prisma/adapter-pg";
 
-import { isMocksEnabled } from "@/lib/config/mocks";
+import { isMocksEnabled } from "@/lib/demo/enabled";
 import { PrismaClient } from "@/lib/generated/prisma/client";
 
 function createClient(): PrismaClient {

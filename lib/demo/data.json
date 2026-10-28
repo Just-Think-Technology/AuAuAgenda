@@ -1,0 +1,295 @@
+{
+  "shop": {
+    "name": "AuAu Agenda Demo",
+    "timeZone": "America/Sao_Paulo",
+    "capacity": 2,
+    "slotIntervalMinutes": 30,
+    "openingHours": [
+      { "weekday": 0, "isClosed": true, "openMinute": null, "closeMinute": null },
+      { "weekday": 1, "isClosed": false, "openMinute": 540, "closeMinute": 1080 },
+      { "weekday": 2, "isClosed": false, "openMinute": 540, "closeMinute": 1080 },
+      { "weekday": 3, "isClosed": false, "openMinute": 540, "closeMinute": 1080 },
+      { "weekday": 4, "isClosed": false, "openMinute": 540, "closeMinute": 1080 },
+      { "weekday": 5, "isClosed": false, "openMinute": 540, "closeMinute": 1080 },
+      { "weekday": 6, "isClosed": false, "openMinute": 540, "closeMinute": 960 }
+    ]
+  },
+  "species": [
+    { "id": "a0000001-0001-4000-8000-000000000001", "name": "Cão" },
+    { "id": "a0000001-0001-4000-8000-000000000002", "name": "Gato" }
+  ],
+  "breeds": [
+    { "id": "e0000001-0001-4000-8000-000000000001", "name": "SRD", "speciesId": "a0000001-0001-4000-8000-000000000001" },
+    { "id": "e0000001-0001-4000-8000-000000000002", "name": "Persa", "speciesId": "a0000001-0001-4000-8000-000000000002" },
+    { "id": "e0000001-0001-4000-8000-000000000003", "name": "Golden Retriever", "speciesId": "a0000001-0001-4000-8000-000000000001" },
+    { "id": "e0000001-0001-4000-8000-000000000004", "name": "Poodle", "speciesId": "a0000001-0001-4000-8000-000000000001" },
+    { "id": "e0000001-0001-4000-8000-000000000005", "name": "Siamês", "speciesId": "a0000001-0001-4000-8000-000000000002" }
+  ],
+  "services": [
+    {
+      "id": "c0000001-0001-4000-8000-000000000001",
+      "key": "banho",
+      "name": "Banho",
+      "description": "Banho completo com shampoo neutro.",
+      "durationMinutes": 60,
+      "priceCents": 8000,
+      "sizes": [],
+      "speciesIds": []
+    },
+    {
+      "id": "c0000001-0001-4000-8000-000000000002",
+      "key": "tosa",
+      "name": "Tosa",
+      "description": "Tosa na máquina ou tesoura, conforme porte.",
+      "durationMinutes": 90,
+      "priceCents": 12000,
+      "sizes": ["SMALL", "MEDIUM", "LARGE"],
+      "speciesIds": ["a0000001-0001-4000-8000-000000000001"]
+    },
+    {
+      "id": "c0000001-0001-4000-8000-000000000003",
+      "key": "banho-e-tosa",
+      "name": "Banho e tosa",
+      "description": "Banho completo seguido de tosa.",
+      "durationMinutes": 120,
+      "priceCents": 18000,
+      "sizes": ["SMALL", "MEDIUM", "LARGE"],
+      "speciesIds": ["a0000001-0001-4000-8000-000000000001"]
+    },
+    {
+      "id": "c0000001-0001-4000-8000-000000000004",
+      "key": "hidratacao",
+      "name": "Hidratação",
+      "description": "Hidratação do pelo depois do banho.",
+      "durationMinutes": 45,
+      "priceCents": 6000,
+      "sizes": [],
+      "speciesIds": []
+    },
+    {
+      "id": "c0000001-0001-4000-8000-000000000005",
+      "key": "unhas",
+      "name": "Corte de unhas",
+      "description": "Corte e lixamento das unhas.",
+      "durationMinutes": 20,
+      "priceCents": 2500,
+      "sizes": [],
+      "speciesIds": []
+    }
+  ],
+  "clients": [
+    {
+      "key": "joao",
+      "id": "b0000001-0001-4000-8000-000000000002",
+      "name": "João Pereira",
+      "phone": "11988887777"
+    },
+    {
+      "key": "ana",
+      "id": "b0000001-0001-4000-8000-000000000003",
+      "name": "Ana Souza",
+      "phone": "11977776666"
+    },
+    {
+      "key": "carlos",
+      "id": "b0000001-0001-4000-8000-000000000004",
+      "name": "Carlos Lima",
+      "phone": "11966665555"
+    },
+    {
+      "key": "beatriz",
+      "id": "b0000001-0001-4000-8000-000000000005",
+      "name": "Beatriz Rocha",
+      "phone": "11955554444"
+    }
+  ],
+  "pets": [
+    {
+      "key": "bob",
+      "id": "d0000001-0001-4000-8000-000000000003",
+      "clientKey": "joao",
+      "name": "Bob",
+      "speciesId": "a0000001-0001-4000-8000-000000000001",
+      "breedId": "e0000001-0001-4000-8000-000000000003",
+      "size": "LARGE",
+      "sex": "male",
+      "notes": "Porte grande. Reservar a mesa larga."
+    },
+    {
+      "key": "mel",
+      "id": "d0000001-0001-4000-8000-000000000004",
+      "clientKey": "ana",
+      "name": "Mel",
+      "speciesId": "a0000001-0001-4000-8000-000000000001",
+      "breedId": "e0000001-0001-4000-8000-000000000004",
+      "size": "SMALL",
+      "sex": "female",
+      "notes": null
+    },
+    {
+      "key": "nina",
+      "id": "d0000001-0001-4000-8000-000000000005",
+      "clientKey": "carlos",
+      "name": "Nina",
+      "speciesId": "a0000001-0001-4000-8000-000000000002",
+      "breedId": "e0000001-0001-4000-8000-000000000005",
+      "size": "SMALL",
+      "sex": "female",
+      "notes": "Fica mais calma com a toalha por perto."
+    },
+    {
+      "key": "pipoca",
+      "id": "d0000001-0001-4000-8000-000000000006",
+      "clientKey": "beatriz",
+      "name": "Pipoca",
+      "speciesId": "a0000001-0001-4000-8000-000000000001",
+      "breedId": "e0000001-0001-4000-8000-000000000001",
+      "size": "SMALL",
+      "sex": "female",
+      "notes": null
+    }
+  ],
+  "appointments": [
+    {
+      "id": 1002,
+      "petKey": "bob",
+      "serviceKey": "tosa",
+      "dayOffset": 0,
+      "minuteOfDay": 540,
+      "station": 2,
+      "status": "IN_SERVICE",
+      "notes": "Tosa na tesoura. Evitar a região da orelha."
+    },
+    {
+      "id": 1004,
+      "petKey": "mel",
+      "serviceKey": "banho-e-tosa",
+      "dayOffset": 0,
+      "minuteOfDay": 660,
+      "station": 2,
+      "status": "CONFIRMED",
+      "notes": "Manter o topete do poodle."
+    },
+    {
+      "id": 1005,
+      "petKey": "pipoca",
+      "serviceKey": "unhas",
+      "dayOffset": 0,
+      "minuteOfDay": 840,
+      "station": 1,
+      "status": "SCHEDULED",
+      "notes": null
+    },
+    {
+      "id": 1006,
+      "petKey": "nina",
+      "serviceKey": "banho",
+      "dayOffset": 0,
+      "minuteOfDay": 870,
+      "station": 2,
+      "status": "CONFIRMED",
+      "notes": "Não gosta de secador forte."
+    },
+    {
+      "id": 1007,
+      "petKey": "bob",
+      "serviceKey": "banho",
+      "dayOffset": 1,
+      "minuteOfDay": 600,
+      "station": 1,
+      "status": "SCHEDULED",
+      "notes": null
+    },
+    {
+      "id": 1008,
+      "petKey": "mel",
+      "serviceKey": "tosa",
+      "dayOffset": 1,
+      "minuteOfDay": 600,
+      "station": 2,
+      "status": "CONFIRMED",
+      "notes": "Só aparar as patas."
+    },
+    {
+      "id": 1010,
+      "petKey": "pipoca",
+      "serviceKey": "hidratacao",
+      "dayOffset": -1,
+      "minuteOfDay": 660,
+      "station": 1,
+      "status": "COMPLETED",
+      "notes": null
+    },
+    {
+      "id": 1011,
+      "petKey": "nina",
+      "serviceKey": "banho",
+      "dayOffset": -1,
+      "minuteOfDay": 540,
+      "station": 2,
+      "status": "NO_SHOW",
+      "notes": "Tutor avisou depois do horário."
+    },
+    {
+      "id": 1012,
+      "petKey": "bob",
+      "serviceKey": "tosa",
+      "dayOffset": -1,
+      "minuteOfDay": 780,
+      "station": 1,
+      "status": "CANCELED",
+      "notes": "Remarcado para outro dia."
+    }
+  ],
+  "personal": {
+    "pets": [
+      {
+        "key": "thor",
+        "name": "Thor",
+        "speciesId": "a0000001-0001-4000-8000-000000000001",
+        "breedId": "e0000001-0001-4000-8000-000000000001",
+        "size": "MEDIUM",
+        "sex": "male",
+        "notes": "Gosta de tosa higiênica."
+      },
+      {
+        "key": "luna",
+        "name": "Luna",
+        "speciesId": "a0000001-0001-4000-8000-000000000002",
+        "breedId": "e0000001-0001-4000-8000-000000000002",
+        "size": "SMALL",
+        "sex": "female",
+        "notes": "Pelo longo. Cuidado ao secar."
+      }
+    ],
+    "appointments": [
+      {
+        "petKey": "thor",
+        "serviceKey": "banho",
+        "dayOffset": 0,
+        "minuteOfDay": 540,
+        "station": 1,
+        "status": "CONFIRMED",
+        "notes": "Chega com 10 minutos de antecedência."
+      },
+      {
+        "petKey": "luna",
+        "serviceKey": "hidratacao",
+        "dayOffset": 0,
+        "minuteOfDay": 630,
+        "station": 1,
+        "status": "SCHEDULED",
+        "notes": "Pelo longo, usar condicionador extra."
+      },
+      {
+        "petKey": "thor",
+        "serviceKey": "banho",
+        "dayOffset": -1,
+        "minuteOfDay": 540,
+        "station": 1,
+        "status": "COMPLETED",
+        "notes": null
+      }
+    ]
+  }
+}

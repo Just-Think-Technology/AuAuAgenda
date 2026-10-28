@@ -7,7 +7,6 @@ import {
 	canCustomerChange,
 	nextStatuses,
 } from "./appointment-status.ts";
-import { isValidCpf } from "./cpf.ts";
 import { DomainError } from "./errors.ts";
 import { eligibilityProblem } from "./service-eligibility.ts";
 
@@ -59,13 +58,5 @@ describe("appointment status", () => {
 		assert.equal(canCustomerChange("IN_SERVICE", future, now), false);
 		assert.throws(() => assertCustomerCanChange("CONFIRMED", past, now), DomainError);
 		assert.throws(() => assertCustomerCanChange("CANCELED", future, now), DomainError);
-	});
-});
-
-describe("cpf", () => {
-	it("validates check digits", () => {
-		assert.equal(isValidCpf("529.982.247-25"), true);
-		assert.equal(isValidCpf("529.982.247-24"), false);
-		assert.equal(isValidCpf("111.111.111-11"), false);
 	});
 });

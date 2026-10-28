@@ -58,6 +58,7 @@ export async function saveShopSettings(
 			is_closed: day.isClosed,
 			open_minute: day.isClosed ? null : day.openMinute,
 			close_minute: day.isClosed ? null : day.closeMinute,
+			updated_at: new Date(),
 		};
 		await tx.opening_hours.upsert({
 			where: { weekday: day.weekday },

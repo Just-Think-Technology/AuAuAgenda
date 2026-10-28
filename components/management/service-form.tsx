@@ -7,10 +7,10 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { saveServiceAction } from "@/app/actions/services";
-import { isMocksPublic } from "@/lib/config/mocks-public";
+import { isMocksPublic } from "@/lib/demo/enabled-public";
 import { DomainError } from "@/lib/domain/errors";
-import { useMockDomainActions } from "@/lib/mock/client-actions";
-import { parseServiceForm } from "@/lib/mock/parse-forms";
+import { useMockDomainActions } from "@/lib/demo/client-actions";
+import { parseServiceForm } from "@/lib/demo/parse-forms";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";

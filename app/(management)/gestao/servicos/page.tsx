@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PencilIcon, PlusIcon } from "lucide-react";
 
-import { MockManagementServices } from "@/components/mock/pages/management-services";
+import { MockManagementServices } from "@/components/demo/pages/management-services";
 import { EmptyState, PageHeader } from "@/components/layouts/page-header";
-import { isMocksEnabled } from "@/lib/config/mocks";
+import { isMocksEnabled } from "@/lib/demo/enabled";
 import { DeleteServiceButton } from "@/components/management/delete-service-button";
 import { Button } from "@/components/ui/button";
 import { listServices } from "@/lib/dal/services";

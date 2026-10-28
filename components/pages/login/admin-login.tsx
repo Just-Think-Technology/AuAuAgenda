@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 
 import { Link } from "next-view-transitions";
 
@@ -8,19 +9,21 @@ import { toast } from "sonner";
 
 import { loginAction, mockAdminLoginAction } from "@/app/actions/auth";
 import { AuthLayout } from "@/components/layouts/auth-layout";
-import { isMocksPublic } from "@/lib/config/mocks-public";
+import { isMocksPublic } from "@/lib/demo/enabled-public";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 
 function MockAdminLogin() {
+	const router = useRouter();
 	const [pending, startLogin] = useTransition();
 
 	function enterDemo() {
 		startLogin(async () => {
 			const response = await mockAdminLoginAction();
 			if (response?.error) toast.error(response.error);
+			else router.push("/gestao");
 		});
 	}
 

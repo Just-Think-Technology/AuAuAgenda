@@ -4,7 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 const CLIENT_COOKIE = "pet-connect:token";
 
 const customerPrefixes = ["/cliente", "/dashboard"];
-const guestOnlyRoutes = ["/", "/cadastro"];
+const guestOnlyRoutes = ["/"];
 
 /**
  * Optimistic redirect based on cookie presence only. Pages, layouts and

@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PlusIcon } from "lucide-react";
 
-import { MockCustomerAppointments } from "@/components/mock/pages/customer-appointments";
+import { MockCustomerAppointments } from "@/components/demo/pages/customer-appointments";
 import { AppointmentList } from "@/components/customer/appointment-list";
-import { isMocksEnabled } from "@/lib/config/mocks";
+import { isMocksEnabled } from "@/lib/demo/enabled";
 import { EmptyState, PageHeader } from "@/components/layouts/page-header";
 import { Button } from "@/components/ui/button";
 import { requireClient } from "@/lib/server/current-user";
@@ -19,7 +19,7 @@ export default async function CustomerAppointmentsPage({ searchParams }: Props) 
 	if (isMocksEnabled()) return <MockCustomerAppointments user={user} />;
 	const params = await searchParams;
 	const now = new Date();
-	const { upcoming, history, timeZone } = await getClientBookings(user.cpf, now);
+	const { upcoming, history, timeZone } = await getClientBookings(user.clientId, now);
 	const confirmation = params.criado
 		? "Agendamento confirmado! Você pode acompanhar o status por aqui."
 		: params.remarcado

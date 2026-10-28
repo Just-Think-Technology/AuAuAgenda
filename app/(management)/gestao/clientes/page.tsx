@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
-import { MockManagementClients } from "@/components/mock/pages/management-clients";
+import { MockManagementClients } from "@/components/demo/pages/management-clients";
 import { PageHeader } from "@/components/layouts/page-header";
-import { isMocksEnabled } from "@/lib/config/mocks";
+import { isMocksEnabled } from "@/lib/demo/enabled";
 import { ClientsView } from "@/components/management/clients/clients-view";
 import { NewClientDialog } from "@/components/management/clients/new-client-dialog";
 import { listClientsWithPets } from "@/lib/dal/accounts";

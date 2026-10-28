@@ -38,9 +38,8 @@ MOCKS=true JWT_SECRET="$(openssl rand -base64 48)" pnpm dev
 
 - Cliente: login por telefone em `/` (mesmo fluxo visual).
 - Gestão: `/gestao` (sem sessão redireciona para `/gestao/entrar`) — botão **Entrar na gestão** (sem e-mail/senha na tela).
-- Cadastro por e-mail, esqueci senha e reset não estão disponíveis na demo.
 
-Credenciais fixas de demo existem só no código (`lib/mock/constants.ts`) para referência de quem mantém o projeto; quem testa o produto não precisa delas.
+Credenciais fixas de demo existem só no código (`lib/demo/constants.ts`) para referência de quem mantém o projeto; quem testa o produto não precisa delas.
 
 Em **produção**, mantenha `MOCKS=false` (padrão) e configure `DATABASE_URL` normalmente.
 
@@ -54,10 +53,10 @@ app/
   session/                 redireciona para a área certa ou encerra sessão expirada
 components/                UI por funcionalidade (booking, customer, management, pets) e ui/ genérica
 lib/
-  domain/                  regras puras e testadas: disponibilidade, fuso, status, elegibilidade, CPF
+  domain/                  regras puras e testadas: disponibilidade, fuso, status, elegibilidade, telefone
   use-cases/               orquestração (transações, regras + dados)
   dal/                     acesso ao banco com seleção explícita de campos (server-only)
-  server/                  Prisma, sessão, usuário atual, e-mail, rate limit (server-only)
+  server/                  Prisma, sessão, usuário atual, rate limit (server-only)
   validation/              leitura e validação de FormData
 prisma/                    schema e migrações
 ```
@@ -73,13 +72,14 @@ O fluxo de dependência é `app → use-cases → domain + dal → banco`. Pági
 
 ## Banco de dados
 
-As migrações em `prisma/migrations` são aditivas:
+As migrações em `prisma/migrations`:
 
 - `0_init` representa o schema original da clínica (linha de base).
 - `1_petshop_booking` adiciona serviços, porte e observações do pet, telefone do cliente, configurações do pet shop, expediente e os novos campos de agendamento. Também cria a extensão `btree_gist`, a restrição de não sobreposição e os dados iniciais do expediente.
 - `2_phone_login` torna e-mail, senha e data de nascimento opcionais e impede que duas contas ativas compartilhem o mesmo telefone. A migração falha se já existirem telefones duplicados entre contas ativas.
 - `3_auth_hardening` adiciona rate limit compartilhado no Postgres e `session_version` para revogar JWTs antigos.
 - `4_drop_phone_otp` remove a tabela de desafio SMS (login do cliente volta a ser só telefone).
+- `5_client_identity` troca a chave do tutor de CPF para `client_id`, exige nome e telefone, e remove e-mail, senha, clínica (`doctor`, `specialty`, `recipe`, `vaccine`) e a recuperação de senha. Conta ativa sem telefone interrompe a migração. Conta já excluída sem telefone sai junto com os pets e agendamentos dela.
 
 **Banco já existente (produção):** o schema original já está aplicado, então marque a linha de base antes de aplicar o resto. Faça um backup antes.
 
@@ -103,7 +103,7 @@ A gestão abre em `/gestao`. O cookie é outro, `pet-connect:admin`, e dura 24 h
 Não há cadastro público de administradores. Gere o hash da senha e insira o registro:
 
 ```bash
-node -e "require('bcrypt').hash(process.argv[1], 12).then(console.log)" 'senha-forte-aqui'
+node -e "require('bcryptjs').hash(process.argv[1], 12).then(console.log)" 'senha-forte-aqui'
 ```
 
 ```sql
@@ -121,5 +121,5 @@ Veja `.env.example`. `API_URL` e `APP_API_KEY` do antigo backend Express não s�
 
 - O backend Express e o frontend separado foram removidos. O histórico original está no repositório `petconnect-uscs/website`.
 - O envio de foto do pet foi descontinuado. Fotos antigas com URL HTTPS continuam aparecendo; nos demais casos é usada a imagem da raça.
-- O limite de tentativas de login, OTP e recuperação de senha usa a tabela `auth_rate_limit` no Postgres. Em produção (Hostinger ou outro proxy), defina `TRUST_PLATFORM_IP=1` para o app usar `x-real-ip` ou o primeiro IP de `x-forwarded-for`. Sem isso, todas as tentativas compartilham o bucket `unknown` e o limite por IP não isola atacantes.
+- O limite de tentativas de login usa a tabela `auth_rate_limit` no Postgres. Em produção (Hostinger ou outro proxy), defina `TRUST_PLATFORM_IP=1` para o app usar `x-real-ip` ou o primeiro IP de `x-forwarded-for`. Sem isso, todas as tentativas compartilham o bucket `unknown` e o limite por IP não isola atacantes.
 - A remoção de clientes e serviços é lógica (`deleted_at`), preservando o histórico.

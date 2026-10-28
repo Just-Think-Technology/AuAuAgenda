@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 import { verifyAdminPassword } from "./admin-password.ts";
 

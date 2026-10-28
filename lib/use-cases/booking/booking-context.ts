@@ -20,7 +20,7 @@ export function toSchedule(settings: ShopSettings): ShopSchedule {
 	};
 }
 
-/** Loads the pet (owned by `cpf`) and the service, enforcing eligibility. */
+/** Loads the pet (owned by this client) and the service, enforcing eligibility. */
 export async function loadEligiblePair(
 	cpf: string,
 	petId: string,

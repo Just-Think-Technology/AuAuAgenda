@@ -1,74 +1,57 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useTransition } from "react";
 
 import { toast } from "sonner";
 
 import { mockSyncClientSessionAction } from "@/app/actions/auth";
 import { updateClientProfileAction } from "@/app/actions/profile";
-import { isMocksPublic } from "@/lib/config/mocks-public";
+import { isMocksPublic } from "@/lib/demo/enabled-public";
 import { normalizePhone } from "@/lib/domain/phone";
-import { useMockDomainActions } from "@/lib/mock/client-actions";
+import { useMockDomainActions } from "@/lib/demo/client-actions";
 import { PageHeader } from "@/components/layouts/page-header";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
-import { formatCpf } from "@/lib/domain/cpf";
 import { formatPhone } from "@/lib/format";
 
-function maskCpf(value: string): string {
-	const digits = value.replace(/\D/g, "").slice(0, 11);
-	return digits
-		.replace(/^(\d{3})(\d)/, "$1.$2")
-		.replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
-		.replace(/\.(\d{3})(\d{1,2})$/, ".$1-$2");
-}
-
 export type ProfileData = {
-	cpf: string | null;
 	name: string;
-	email: string | null;
 	phone: string | null;
 };
 
 export function ProfileSettingsForm({
 	profile,
-	clientCpf,
+	clientId,
 }: {
 	profile: ProfileData;
-	clientCpf?: string;
+	clientId?: string;
 }) {
-	const mocks = isMocksPublic() && Boolean(clientCpf);
+	const mocks = isMocksPublic() && Boolean(clientId);
 	const mockActions = useMockDomainActions();
 	const [state, formAction, isPending] = useActionState(updateClientProfileAction, undefined);
 	const [mockPending, startMock] = useTransition();
-	const [cpf, setCpf] = useState(profile.cpf ? formatCpf(profile.cpf) : "");
 	useActionFeedback(state);
 
 	function submitMock(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
-		if (!clientCpf) return;
+		if (!clientId) return;
 		const formData = new FormData(event.currentTarget);
 		startMock(async () => {
 			const name = String(formData.get("name") ?? "").trim();
 			const phone = normalizePhone(String(formData.get("phone") ?? ""));
-			const emailRaw = String(formData.get("email") ?? "").trim();
-			const cpfRaw = String(formData.get("cpf") ?? "").replace(/\D/g, "");
-			const result = mockActions.updateProfile(clientCpf, {
+			const result = mockActions.updateProfile(clientId, {
 				name,
 				phone: phone ?? "",
-				email: emailRaw || null,
-				cpfDocument: cpfRaw || null,
 			});
 			if (!result?.ok) {
 				toast.error(result?.error ?? "Erro ao salvar.");
 				return;
 			}
 			const sync = await mockSyncClientSessionAction({
-				cpf: clientCpf,
+				clientId,
 				name,
-				email: emailRaw || null,
 				sessionVersion: result.sessionVersion ?? 0,
 			});
 			if (sync.error) toast.error(sync.error);
@@ -103,28 +86,6 @@ export function ProfileSettingsForm({
 						placeholder="(11) 91234-5678"
 						required
 						defaultValue={profile.phone ? formatPhone(profile.phone) : ""}
-					/>
-				</Field>
-				<Field htmlFor="cpf" label="CPF" hint="Opcional. A equipe usa para identificar o tutor.">
-					<Input
-						id="cpf"
-						name="cpf"
-						inputMode="numeric"
-						autoComplete="off"
-						placeholder="000.000.000-00"
-						value={cpf}
-						onChange={(event) => setCpf(maskCpf(event.target.value))}
-					/>
-				</Field>
-				<Field htmlFor="email" label="E-mail" hint="Opcional. Serve para a equipe entrar em contato.">
-					<Input
-						id="email"
-						name="email"
-						type="email"
-						autoComplete="email"
-						placeholder="seuemail@gmail.com"
-						maxLength={255}
-						defaultValue={profile.email ?? ""}
 					/>
 				</Field>
 			</div>

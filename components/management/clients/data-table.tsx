@@ -47,26 +47,13 @@ const globalFilterFn: FilterFn<unknown> = (row, _columnId, filterValue) => {
 		.toLowerCase();
 	if (!raw) return true;
 
-	const r = row.original as { name?: string; cpf?: string; email?: string | null; phone?: string | null };
+	const r = row.original as { name?: string; phone?: string | null };
 	const digits = raw.replace(/\D/g, "");
 
 	if (
 		String(r.name ?? "")
 			.toLowerCase()
 			.includes(raw)
-	)
-		return true;
-	if (
-		String(r.email ?? "")
-			.toLowerCase()
-			.includes(raw)
-	)
-		return true;
-	if (
-		digits &&
-		String(r.cpf ?? "")
-			.replace(/\D/g, "")
-			.includes(digits)
 	)
 		return true;
 	if (
